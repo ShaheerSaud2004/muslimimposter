@@ -43,8 +43,11 @@ export type Category = {
   difficulty?: Difficulty;
 };
 
+export type Locale = 'en' | 'ar' | 'ur';
+
 export type AppSettings = {
   theme: 'soft' | 'paper' | 'dark';
+  locale: Locale;
   unlockedCategories: string[];
   customCategories: Category[];
 };
