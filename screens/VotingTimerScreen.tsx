@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, AppState, AppStateStatus } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { RootStackParamList } from '../App';
+import { Button } from '../components/Button';
 import { useTheme } from '../contexts/ThemeContext';
 import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
@@ -32,71 +32,38 @@ export default function VotingTimerScreen() {
   const [timeRemaining, setTimeRemaining] = useState(initialSeconds);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [timeUp, setTimeUp] = useState(false);
-  // End time (ms) so timer is correct when app reopens or phone was off
-  const endTimeRef = useRef<number>(Date.now() + initialSeconds * 1000);
-
-  // Play haptic feedback (and optional sound) when timer ends
-  const playTimerEndSound = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setTimeout(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }, 200);
-  }, []);
-
-  const tick = useCallback(() => {
-    const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
-    setTimeRemaining(remaining);
-    if (remaining <= 0) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      setTimeUp(true);
-      playTimerEndSound();
-    }
-  }, [playTimerEndSound]);
-
-  const startInterval = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(tick, 1000);
-  }, [tick]);
 
   useEffect(() => {
-    endTimeRef.current = Date.now() + initialSeconds * 1000;
-    startInterval();
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setTimeUp(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [startInterval]);
-
-  // When app comes back from background or phone wakes, recalc time and trigger sound if time's up
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
-      if (nextState !== 'active') return;
-      const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
-      setTimeRemaining(remaining);
-      if (remaining <= 0) {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        setTimeUp(true);
-        playTimerEndSound();
-      } else {
-        startInterval();
-      }
-    });
-    return () => sub.remove();
-  }, [playTimerEndSound, startInterval]);
+  }, []);
 
   const handleAdd30 = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTimeUp(false);
-    endTimeRef.current += 30 * 1000;
     setTimeRemaining((prev) => Math.min(300, prev + 30));
     if (timerRef.current) clearInterval(timerRef.current);
-    startInterval();
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setTimeUp(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleReveal = () => {
@@ -153,26 +120,12 @@ export default function VotingTimerScreen() {
 
         <Animated.View entering={FadeIn.delay(300)} style={styles.buttonContainer}>
           <View style={styles.buttonWrapper}>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                handleReveal();
-              }}
-              style={({ pressed }) => [
-                styles.revealButton,
-                {
-                  backgroundColor: colors.accent,
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}
-            >
-              <Text style={[styles.revealButtonText, { color: '#FFFFFF' }]}>
-                Reveal When Ready
-              </Text>
-              <Svg width={20} height={20} viewBox="0 -960 960 960" fill="#FFFFFF" style={styles.revealButtonIcon}>
-                <Path d="M480-80q-26 0-47-12.5T400-126q-33 0-56.5-23.5T320-206v-142q-59-39-94.5-103T190-590q0-121 84.5-205.5T480-880q121 0 205.5 84.5T770-590q0 77-35.5 140T640-348v142q0 33-23.5 56.5T560-126q-12 21-33 33.5T480-80Zm-80-126h160v-36H400v36Zm0-76h160v-38H400v38Zm-8-118h58v-108l-88-88 42-42 76 76 76-76 42 42-88 88v108h58q54-26 88-76.5T690-590q0-88-61-149t-149-61q-88 0-149 61t-61 149q0 63 34 113.5t88 76.5Zm88-162Zm0-38Z" />
-              </Svg>
-            </Pressable>
+            <Button
+              title="Reveal When Ready ✨"
+              onPress={handleReveal}
+              style={styles.button}
+              textStyle={styles.buttonText}
+            />
           </View>
         </Animated.View>
       </Animated.View>
@@ -255,27 +208,8 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 400,
     alignItems: 'center',
-  },
-  revealButton: {
-    width: '100%',
-    minHeight: 48,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  revealButtonText: {
-    ...typography.bodyBold,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  revealButtonIcon: {
-    marginLeft: spacing.xs,
   },
   button: {
     width: '100%',

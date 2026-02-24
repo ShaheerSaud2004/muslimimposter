@@ -12,7 +12,6 @@ import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
-import { NavigationHeader } from '../components/NavigationHeader';
 
 type QuizAnswerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -89,7 +88,6 @@ export default function QuizAnswerScreen() {
       edges={['top', 'bottom']}
     >
       <PatternBackground />
-      <NavigationHeader showGetStarted={false} showSettings={false} />
       
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

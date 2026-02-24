@@ -53,7 +53,7 @@ let md = `# Khafī – All Words and Quiz Questions
 **To remove or edit content:** edit the source files and re-run this script (or edit the list for reference).
 
 - **Words (Word + Clue mode):** \`data/categories.ts\` – each category has a \`words: [ ... ]\` array.
-- **Quiz questions (Quiz mode):** \`data/quizQuestions.ts\` – each entry has \`id\`, \`categoryId\`, \`question\`, \`answer\`.
+- **Quiz questions (Quiz mode):** \`data/quizQuestions.ts\` – each entry has \`id\`, \`categoryId\`, \`question\`, \`answer\`, \`difficulty\`.
 
 Regenerate this file: \`node scripts/generate-words-questions-list.js\`
 
@@ -70,12 +70,12 @@ for (const cat of categories) {
 
 md += `---
 
-## Quiz Questions (id | categoryId | question | answer)
+## Quiz Questions (id | categoryId | question | answer | difficulty)
 
 `;
 
 for (const q of questions) {
-  md += `- **${q.id}** | \`${q.categoryId}\` | ${q.question} | **${q.answer}**\n`;
+  md += `- **${q.id}** | \`${q.categoryId}\` | ${q.question} | **${q.answer}** | ${q.difficulty}\n`;
 }
 
 const outPath = path.join(__dirname, '../ALL_WORDS_AND_QUESTIONS.md');

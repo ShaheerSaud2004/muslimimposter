@@ -112,19 +112,18 @@ export const selectRandomCategory = (
   return availableCategories[Math.floor(Math.random() * availableCategories.length)];
 };
 
-/** Pick a category different from excludeCategoryId when possible. When strictPool is true, never leave the categoryIds pool. */
+/** Pick a category different from excludeCategoryId when possible. Uses all categories if selected pool would be empty. */
 export const selectDifferentCategory = (
   categoryIds: string[],
   categories: Category[],
-  excludeCategoryId: string,
-  strictPool?: boolean
+  excludeCategoryId: string
 ): string => {
   const valid = (id: string) => {
     const cat = categories.find(c => c.id === id);
     return cat && (!cat.locked || cat.isCustom) && cat.words.length > 0;
   };
   let pool = categoryIds.filter(valid).filter(id => id !== excludeCategoryId);
-  if (pool.length === 0 && !strictPool) {
+  if (pool.length === 0) {
     pool = categories
       .filter(c => (!c.locked || c.isCustom) && c.words.length > 0)
       .map(c => c.id)

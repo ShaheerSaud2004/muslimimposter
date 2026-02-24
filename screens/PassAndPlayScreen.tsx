@@ -32,12 +32,10 @@ import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { getCategoryName } from '../utils/game';
-import { getResponsiveCueWordFontSize, getResponsiveCueWordMinimumScale } from '../utils/responsive';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories } from '../utils/storage';
 import { getEnglishTranslation } from '../utils/translations';
 import { Player } from '../types';
-import { NavigationHeader } from '../components/NavigationHeader';
 
 type PassAndPlayScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -260,9 +258,6 @@ export default function PassAndPlayScreen() {
     }
   };
 
-  const cueWordFontSize = getResponsiveCueWordFontSize();
-  const cueWordMinScale = getResponsiveCueWordMinimumScale();
-
   const getCardContent = (player: Player) => {
     const allCategories = [...defaultCategories, ...customCategories];
     const categoryName = getCategoryName(settings.secretCategory, allCategories);
@@ -271,7 +266,6 @@ export default function PassAndPlayScreen() {
     const isQuizMode = settings.mode === 'quiz' && settings.quizQuestion;
     
     if (player.role === 'imposter') {
-      const otherImposters = players.filter(p => p.role === 'imposter' && p.id !== player.id);
       return (
         <>
           {isQuizMode && (
@@ -295,13 +289,6 @@ export default function PassAndPlayScreen() {
           <Text style={[styles.roleLabel, { color: colors.imposter }]}>
             IMPOSTER
           </Text>
-          {otherImposters.length > 0 && (
-            <Text
-              style={[styles.instructionText, { color: colors.imposter, marginTop: 8, fontWeight: '600' }]}
-            >
-              Your fellow imposters: {otherImposters.map(p => p.name).join(', ')}
-            </Text>
-          )}
           {settings.specialModes.blindImposter && (
             <Text
               style={[styles.instructionText, { color: colors.textSecondary }]}
@@ -345,22 +332,20 @@ export default function PassAndPlayScreen() {
             {isQuizMode ? 'The answer is...' : 'The word is...'}
           </Text>
           <Text 
-            style={[styles.wordText, { color: colors.text, fontSize: cueWordFontSize }]}
+            style={[styles.wordText, { color: colors.text }]}
             numberOfLines={1}
             adjustsFontSizeToFit={true}
-            minimumFontScale={cueWordMinScale}
+            minimumFontScale={0.5}
           >
             {settings.secretWord}
           </Text>
-{getEnglishTranslation(settings.secretWord) && (
-          <View style={styles.wordTranslationContainer}>
+          {getEnglishTranslation(settings.secretWord) && (
             <Text
               style={[styles.wordTranslation, { color: colors.textSecondary }]}
             >
               {getEnglishTranslation(settings.secretWord)}
             </Text>
-          </View>
-        )}
+          )}
           <Text
             style={[styles.instructionText, { color: colors.textSecondary }]}
           >
@@ -391,21 +376,19 @@ export default function PassAndPlayScreen() {
           {isQuizMode ? 'The answer is...' : 'The word is...'}
         </Text>
         <Text 
-          style={[styles.wordText, { color: colors.text, fontSize: cueWordFontSize }]}
+          style={[styles.wordText, { color: colors.text }]}
           numberOfLines={1}
           adjustsFontSizeToFit={true}
-          minimumFontScale={cueWordMinScale}
+          minimumFontScale={0.5}
         >
           {settings.secretWord}
         </Text>
         {getEnglishTranslation(settings.secretWord) && (
-          <View style={styles.wordTranslationContainer}>
-            <Text
-              style={[styles.wordTranslation, { color: colors.textSecondary }]}
-            >
-              {getEnglishTranslation(settings.secretWord)}
-            </Text>
-          </View>
+          <Text
+            style={[styles.wordTranslation, { color: colors.textSecondary }]}
+          >
+            {getEnglishTranslation(settings.secretWord)}
+          </Text>
         )}
       </>
     );
@@ -419,23 +402,20 @@ export default function PassAndPlayScreen() {
         edges={['top', 'bottom']}
       >
         <PatternBackground />
-        <NavigationHeader showGetStarted={false} showSettings={false} />
 
         <View style={styles.content}>
-          <View style={styles.header}>
-            <Animated.View style={deckAnimatedStyle}>
-              <Text
-                style={[styles.title, { color: colors.text }]}
-              >
-                Select Your Card
-              </Text>
-              <Text
-                style={[styles.progressText, { color: colors.textSecondary }]}
-              >
-                {remainingCount} {remainingCount === 1 ? 'card' : 'cards'} remaining
-              </Text>
-            </Animated.View>
-          </View>
+          <Animated.View style={[styles.header, deckAnimatedStyle]}>
+            <Text
+              style={[styles.title, { color: colors.text }]}
+            >
+              Select Your Card
+            </Text>
+            <Text
+              style={[styles.progressText, { color: colors.textSecondary }]}
+            >
+              {remainingCount} {remainingCount === 1 ? 'card' : 'cards'} remaining
+            </Text>
+          </Animated.View>
 
           <ScrollView
             contentContainerStyle={styles.deckContainer}
@@ -483,7 +463,6 @@ export default function PassAndPlayScreen() {
         edges={['top', 'bottom']}
       >
         <PatternBackground />
-        <NavigationHeader showGetStarted={false} showSettings={false} />
 
         <View style={styles.content}>
           <View style={styles.cardContainer}>
@@ -584,7 +563,6 @@ const styles = StyleSheet.create({
   progressText: {
     ...typography.body,
     fontSize: 16,
-    textAlign: 'center',
   },
   deckContainer: {
     flexGrow: 1,
@@ -847,22 +825,16 @@ const styles = StyleSheet.create({
     lineHeight: 64,
     marginVertical: spacing.md,
   },
-  wordTranslationContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
   wordTranslation: {
     ...typography.caption,
     fontSize: 15,
     textAlign: 'center',
+    marginTop: spacing.sm,
     opacity: 0.75,
     fontStyle: 'italic',
     fontWeight: '500',
-    lineHeight: 22,
-    maxWidth: '100%',
+    lineHeight: 20,
+    paddingHorizontal: spacing.md,
   },
   categoryText: {
     ...typography.body,

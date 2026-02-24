@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, Dimensions } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -9,52 +9,31 @@ import Animated, {
   withSpring,
   withDelay,
   withTiming,
-  withRepeat,
-  withSequence,
   FadeIn,
   FadeInDown,
-  SlideInRight,
 } from 'react-native-reanimated';
 import { RootStackParamList } from '../App';
 import { Button } from '../components/Button';
 import { Logo } from '../components/Logo';
 import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { getMaxContentWidth, getResponsivePadding } from '../utils/responsive';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type MenuScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Menu'>;
 
 export default function MenuScreen() {
   const navigation = useNavigation<MenuScreenNavigationProp>();
   const { colors } = useTheme();
-  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const maxWidth = getMaxContentWidth();
   const responsivePadding = getResponsivePadding();
-  
-  const [showResetButton, setShowResetButton] = useState(false);
-  const [showStatsHint, setShowStatsHint] = useState(false);
-  const [forceRender, setForceRender] = useState(0);
-  const buttonsRenderedRef = useRef(false);
-  const buttonContainerRef = useRef<View | null>(null);
-  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const titleScale = useSharedValue(0.9);
   const titleOpacity = useSharedValue(0);
   const subtitleOpacity = useSharedValue(0);
   const taglineOpacity = useSharedValue(0);
-  const statsHintPulse = useSharedValue(1);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setShowStatsHint(true);
-    }, [])
-  );
 
   useEffect(() => {
     // Animate title
@@ -69,41 +48,7 @@ export default function MenuScreen() {
     
     // Animate tagline with delay
     taglineOpacity.value = withDelay(400, withTiming(1, { duration: 400 }));
-
-    // Check if Get Started button is visible after 5 seconds
-    checkTimeoutRef.current = setTimeout(() => {
-      if (!buttonsRenderedRef.current) {
-        // Buttons haven't rendered yet, show reset button
-        setShowResetButton(true);
-      }
-    }, 5000);
-
-    return () => {
-      if (checkTimeoutRef.current) {
-        clearTimeout(checkTimeoutRef.current);
-      }
-    };
-  }, [forceRender]);
-
-  useEffect(() => {
-    if (showStatsHint) {
-      statsHintPulse.value = withRepeat(
-        withSequence(
-          withTiming(1.08, { duration: 600 }),
-          withTiming(1, { duration: 600 })
-        ),
-        -1,
-        true
-      );
-    }
-    return () => {
-      statsHintPulse.value = 1;
-    };
-  }, [showStatsHint]);
-
-  const statsHintAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: statsHintPulse.value }],
-  }));
+  }, []);
 
   const titleAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: titleScale.value }],
@@ -123,36 +68,6 @@ export default function MenuScreen() {
     navigation.navigate('Settings');
   };
 
-  const handleReset = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setShowResetButton(false);
-    buttonsRenderedRef.current = false;
-    setForceRender(prev => prev + 1); // Force re-render
-    // Clear and restart animations
-    titleScale.value = 0.9;
-    titleOpacity.value = 0;
-    subtitleOpacity.value = 0;
-    taglineOpacity.value = 0;
-    setTimeout(() => {
-      titleScale.value = withSpring(1, { damping: 10, stiffness: 100 });
-      titleOpacity.value = withTiming(1, { duration: 400 });
-      subtitleOpacity.value = withDelay(200, withTiming(1, { duration: 400 }));
-      taglineOpacity.value = withDelay(400, withTiming(1, { duration: 400 }));
-      // Restart the 5-second check
-      if (checkTimeoutRef.current) {
-        clearTimeout(checkTimeoutRef.current);
-      }
-      checkTimeoutRef.current = setTimeout(() => {
-        if (!buttonsRenderedRef.current) {
-          setShowResetButton(true);
-        }
-      }, 5000);
-    }, 100);
-  };
-
-  // Calculate responsive logo size for smaller screens
-  const logoSize = SCREEN_HEIGHT < 700 ? 280 : 360;
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -160,47 +75,15 @@ export default function MenuScreen() {
     >
       <PatternBackground />
       
-      {/* Header area: stats hint badge + settings button */}
-      <View
-        style={[
-          styles.header,
-          {
-            top: Math.max(insets.top, spacing.md) + spacing.sm,
-            right: Math.max(insets.right, spacing.md) + spacing.sm,
-          },
-        ]}
-      >
-        {showStatsHint && (
-          <Animated.View
-            entering={SlideInRight.delay(1000).springify()}
-            style={[styles.statsHintWrapper, statsHintAnimatedStyle]}
-          >
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                navigation.navigate('Statistics');
-              }}
-              style={({ pressed }) => [
-                styles.statsHintCircle,
-                {
-                  backgroundColor: colors.accent,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <Text style={[styles.statsHintText, { color: '#FFFFFF' }]}>
-                View Statistics!
-              </Text>
-            </Pressable>
-          </Animated.View>
-        )}
+      <View style={[styles.header, { top: insets.top + spacing.lg, right: insets.right + spacing.lg }]}>
         <Pressable
           onPress={handleSettingsPress}
           style={({ pressed }) => [
             styles.settingsButton,
-            { opacity: pressed ? 0.6 : 1 },
+            {
+              opacity: pressed ? 0.6 : 1,
+            },
           ]}
-          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
           <View style={[styles.settingsIconContainer, { backgroundColor: colors.border }]}>
             <Image
@@ -212,101 +95,42 @@ export default function MenuScreen() {
         </Pressable>
       </View>
 
-      {/* ScrollView ensures buttons are always accessible */}
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { 
-            maxWidth, 
-            paddingHorizontal: responsivePadding.horizontal,
-            paddingTop: Math.max(insets.top, spacing.md) + 60, // Space for settings button
-            paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg,
-            minHeight: SCREEN_HEIGHT - Math.max(insets.top, spacing.md) - Math.max(insets.bottom, spacing.lg),
-          }
-        ]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <Animated.View style={titleAnimatedStyle}>
-              <Logo width={logoSize} height={logoSize} style={[styles.logo, { width: logoSize, height: logoSize }]} />
-            </Animated.View>
-            <View style={styles.taglineOverlay}>
-              <Animated.View style={taglineAnimatedStyle}>
-                <View style={[styles.taglineContainer, { borderTopColor: colors.border }]}>
-                  <Text
-                    style={[styles.tagline, { color: colors.textSecondary }]}
-                  >
-                    {t('menu.tagline')}
-                  </Text>
-                </View>
-              </Animated.View>
+      <View style={[styles.content, { maxWidth, paddingHorizontal: responsivePadding.horizontal }]}>
+        <Animated.View style={[titleAnimatedStyle, styles.logoContainer]}>
+          <Logo width={400} height={400} style={styles.logo} />
+          <Animated.View style={[taglineAnimatedStyle, styles.taglineOverlay]}>
+            <View style={[styles.taglineContainer, { borderTopColor: colors.border }]}>
+              <Text
+                style={[styles.tagline, { color: colors.textSecondary }]}
+              >
+                The Islamic Hidden Word Game
+              </Text>
             </View>
-          </View>
+          </Animated.View>
+        </Animated.View>
 
-          {/* Buttons - always rendered with animations */}
-          <View 
-            ref={buttonContainerRef} 
-            style={styles.buttonContainer} 
-            onLayout={(event) => {
-              const { width, height } = event.nativeEvent.layout;
-              // Button container rendered with actual dimensions
-              if (width > 0 && height > 0) {
-                buttonsRenderedRef.current = true;
-                if (showResetButton) {
-                  setShowResetButton(false);
-                }
-              }
-            }}
-          >
-            {/* Get Started button - animated but always clickable */}
-            <Animated.View 
-              entering={FadeInDown.delay(300).springify()}
-              style={styles.buttonWrapper}
-            >
+        <View style={styles.buttonContainer}>
+          <View style={{ opacity: 1 }}>
+            <Animated.View entering={FadeInDown.delay(300).springify()}>
               <Button
-                title={t('menu.getStarted')}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  navigation.navigate('GameSetup');
-                }}
+                title="Get Started"
+                onPress={() => navigation.navigate('GameSetup')}
                 style={styles.button}
               />
             </Animated.View>
-            {/* How to Play button - animated but always clickable */}
-            <Animated.View 
-              entering={FadeInDown.delay(400).springify()}
-              style={styles.buttonWrapper}
-            >
+          </View>
+          <View style={{ opacity: 1 }}>
+            <Animated.View entering={FadeInDown.delay(400).springify()}>
               <Button
-                title={t('menu.howToPlay')}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  navigation.navigate('HowToPlay');
-                }}
+                title="How to Play"
+                onPress={() => navigation.navigate('HowToPlay')}
                 variant="secondary"
                 style={styles.button}
               />
             </Animated.View>
-            
-            {/* Fallback reset button if Get Started doesn't appear after 5 seconds */}
-            {showResetButton && (
-              <Animated.View entering={FadeIn.delay(0).springify()} style={styles.resetContainer}>
-                <Button
-                  title="Reset Screen"
-                  onPress={handleReset}
-                  variant="secondary"
-                  style={styles.resetButton}
-                />
-                <Text style={[styles.resetText, { color: colors.textSecondary }]}>
-                  Buttons didn't load. Tap to reload.
-                </Text>
-              </Animated.View>
-            )}
           </View>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -317,33 +141,11 @@ const styles = StyleSheet.create({
   },
   header: {
     position: 'absolute',
-    zIndex: 1000,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-  },
-  statsHintWrapper: {
-    marginRight: spacing.xs,
-  },
-  statsHintCircle: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  statsHintText: {
-    ...typography.bodyBold,
-    fontSize: 13,
-    fontWeight: '700',
+    zIndex: 10,
+    padding: spacing.sm,
   },
   settingsButton: {
-    padding: spacing.xs,
+    padding: spacing.sm,
   },
   settingsIconContainer: {
     width: 44, // iOS accessibility minimum
@@ -351,11 +153,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-    opacity: 1, // Fully visible
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    opacity: 0.8, // Slightly more visible
     minWidth: 44,
     minHeight: 44,
   },
@@ -363,25 +165,21 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
   content: {
-    width: '100%',
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    flexGrow: 1,
+    alignItems: 'center',
+    width: '100%',
+    alignSelf: 'center',
   },
   logoContainer: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
   },
   logo: {
+    width: 360,
+    height: 360,
     marginBottom: 0,
   },
   taglineOverlay: {
@@ -417,34 +215,9 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     gap: spacing.md,
-    marginTop: spacing.lg,
-    paddingBottom: spacing.md,
-    minHeight: 140, // Ensure container has height even if buttons don't render
-  },
-  buttonWrapper: {
-    width: '100%',
-    opacity: 1, // Always visible
-    zIndex: 10, // Ensure it's above other elements
-    // Ensure buttons are clickable even during animation
-    pointerEvents: 'auto',
+    minHeight: 120, // Ensure container has height even if buttons don't render
   },
   button: {
     width: '100%',
-    minHeight: 56, // Ensure button is always visible
-  },
-  resetContainer: {
-    width: '100%',
-    marginTop: spacing.md,
-    alignItems: 'center',
-  },
-  resetButton: {
-    width: '100%',
-    minHeight: 56,
-  },
-  resetText: {
-    ...typography.caption,
-    fontSize: 12,
-    marginTop: spacing.xs,
-    textAlign: 'center',
   },
 });

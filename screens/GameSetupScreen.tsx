@@ -40,7 +40,7 @@ import {
   selectQuizQuestion,
   selectImposterQuizQuestion,
 } from '../utils/game';
-import { getSettings, getCustomCategories, getUsedWords, addUsedWord, getSessionUsedQuestionIds, addSessionUsedQuestionId, getSessionUsedWords, addSessionUsedWord } from '../utils/storage';
+import { getSettings, getCustomCategories, getUsedWords, addUsedWord, getSessionUsedQuestionIds, addSessionUsedQuestionId } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GameSettings, GameMode, Category, Difficulty } from '../types';
 import { getMaxContentWidth, getResponsivePadding } from '../utils/responsive';
@@ -71,7 +71,8 @@ export default function GameSetupScreen() {
   const [infoModal, setInfoModal] = useState<'blind' | 'double' | 'word' | 'quiz' | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [playerNames, setPlayerNames] = useState<string[]>(['', '', '']);
-  const [difficulty] = useState<Difficulty | 'all'>('all');
+  const [difficulty, setDifficulty] = useState<Difficulty | 'all'>('all');
+  const [showDifficultyModal, setShowDifficultyModal] = useState(false);
   const [showNameInputModal, setShowNameInputModal] = useState(false);
   const [nameInputModalIndex, setNameInputModalIndex] = useState<number | null>(null);
   const [tempNameInput, setTempNameInput] = useState('');
@@ -87,7 +88,7 @@ export default function GameSetupScreen() {
     setDoubleAgent(settings.specialModes.doubleAgent);
     setSelectedCategories(settings.selectedCategories ?? []);
     setShowHintToImposter(settings.showHintToImposter);
-    // difficulty removed from UI; always 'all'
+    setDifficulty(settings.difficulty ?? 'all');
   }, [players.length, settings]);
 
   // Restore player names after numPlayers sync (runs after the pad/trim effect)
@@ -99,6 +100,12 @@ export default function GameSetupScreen() {
     }
     hasInitializedFromContext.current = false;
   }, [numPlayers, players.length, settings]);
+
+  // Clear selected categories when difficulty changes (skip when restoring from context)
+  useEffect(() => {
+    if (hasInitializedFromContext.current) return;
+    setSelectedCategories([]);
+  }, [difficulty]);
 
   useEffect(() => {
     // Load data asynchronously to prevent blocking render
@@ -187,7 +194,19 @@ export default function GameSetupScreen() {
   // Use default categories
   let sortedCategories = [...defaultCategories];
 
-  const availableCategories = [...sortedCategories, ...customCategories];
+  // Filter categories by difficulty
+  let filteredCategories = sortedCategories;
+  if (difficulty !== 'all') {
+    filteredCategories = sortedCategories.filter(cat => {
+      // Custom categories don't have difficulty, show them always
+      if (cat.isCustom) {
+        return true;
+      }
+      return cat.difficulty === difficulty;
+    });
+  }
+
+  const availableCategories = [...filteredCategories, ...customCategories];
   
   const MAX_VISIBLE_CATEGORIES = 6;
   const visibleCategories = availableCategories.slice(0, MAX_VISIBLE_CATEGORIES);
@@ -217,14 +236,12 @@ export default function GameSetupScreen() {
   };
 
   const startGame = async () => {
-    const allCategories = [...availableCategories, ...customCategories];
-
     // If no categories selected, randomly choose ONE category
     let categoriesToUse: string[];
     let secretCategoryId: string;
-
+    
     if (selectedCategories.length === 0) {
-      // Randomly select a single category from all
+      // Randomly select a single category
       secretCategoryId = selectSingleRandomCategory(availableCategories);
       if (!secretCategoryId) {
         showAlert({ title: 'Error', message: 'No categories available. Please unlock a category.' });
@@ -232,19 +249,13 @@ export default function GameSetupScreen() {
       }
       categoriesToUse = [secretCategoryId];
     } else {
-      // Filter to only valid selected categories (must exist and have words)
-      const validSelectedIds = selectedCategories.filter(id => {
-        const cat = allCategories.find(c => c.id === id);
-        return cat && cat.words.length > 0 && (!cat.locked || cat.isCustom);
-      });
-      if (validSelectedIds.length === 0) {
-        showAlert({ title: 'Error', message: 'Selected categories have no words. Please choose other categories or leave empty for random.' });
-        return;
-      }
-      categoriesToUse = validSelectedIds;
-      secretCategoryId = selectRandomCategory(categoriesToUse, allCategories);
+      // Use selected categories and randomly pick one for the word
+      categoriesToUse = selectedCategories;
+      secretCategoryId = selectRandomCategory(categoriesToUse, availableCategories);
     }
 
+    // Get words from only the chosen category
+    const allCategories = [...availableCategories, ...customCategories];
     const chosenCategory = allCategories.find(c => c.id === secretCategoryId);
     
     if (!chosenCategory || chosenCategory.words.length === 0) {
@@ -294,17 +305,15 @@ export default function GameSetupScreen() {
         imposterQuizQuestion = quizQuestion;
       }
       
-      // Mark word as used (persistent + session so Play Again doesn't repeat)
+      // Mark word as used
       await addUsedWord(secretWord);
-      addSessionUsedWord(secretCategoryId, secretWord);
     } else {
-      // Regular mode: exclude both persistent and session used words for this category
+      // Regular mode: Get used words and select a word that hasn't been used
       const usedWords = await getUsedWords();
-      const sessionUsed = getSessionUsedWords(secretCategoryId);
-      secretWord = selectRandomWord(chosenCategory.words, [...usedWords, ...sessionUsed]);
+      secretWord = selectRandomWord(chosenCategory.words, usedWords);
       
+      // Mark word as used
       await addUsedWord(secretWord);
-      addSessionUsedWord(secretCategoryId, secretWord);
     }
     
     // Select random starting player ID first
@@ -321,7 +330,7 @@ export default function GameSetupScreen() {
         blindImposter,
         doubleAgent,
       },
-      selectedCategories: selectedCategories.length > 0 ? categoriesToUse : [],
+      selectedCategories: categoriesToUse,
       showCategoryToImposter: !blindImposter, // Show category when Blind Imposter is OFF
       showHintToImposter,
       startingPlayerId,
@@ -349,6 +358,7 @@ export default function GameSetupScreen() {
       return;
     }
 
+    // All validations passed, start the game
     await startGame();
   };
 
@@ -824,8 +834,248 @@ export default function GameSetupScreen() {
           </Card>
         </Animated.View>
 
-        {/* Categories Card */}
+        {/* Difficulty Level Card */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
+          <Card style={styles.sectionCard}>
+            <View style={styles.gameModeHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Difficulty Level
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowDifficultyModal(true);
+              }}
+              style={({ pressed }) => [
+                styles.difficultyDropdown,
+                {
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <View style={styles.difficultyDropdownContent}>
+                <View style={styles.difficultyIcons}>
+                  {difficulty === 'easy' && (
+                    <Svg width={20} height={20} viewBox="0 -960 960 960">
+                      <Path
+                        d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                        fill={colors.accent}
+                      />
+                    </Svg>
+                  )}
+                  {difficulty === 'medium' && (
+                    <>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                    </>
+                  )}
+                  {difficulty === 'hard' && (
+                    <>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                    </>
+                  )}
+                  {difficulty === 'all' && (
+                    <>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                      <Svg width={20} height={20} viewBox="0 -960 960 960">
+                        <Path
+                          d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                          fill={colors.accent}
+                        />
+                      </Svg>
+                    </>
+                  )}
+                </View>
+                <Text style={[styles.difficultyDropdownText, { color: colors.text }]}>
+                  {difficulty === 'easy' ? 'Easy' : difficulty === 'medium' ? 'Medium' : difficulty === 'hard' ? 'Hard' : 'All'}
+                </Text>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M7 10l5 5 5-5"
+                    stroke={colors.textSecondary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </View>
+            </Pressable>
+
+            {/* Difficulty Selection Modal */}
+            <Modal
+              visible={showDifficultyModal}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setShowDifficultyModal(false)}
+            >
+              <Pressable
+                style={styles.modalOverlay}
+                onPress={() => setShowDifficultyModal(false)}
+              >
+                <View style={[styles.difficultyModalContent, { backgroundColor: colors.cardBackground }]}>
+                  {(['easy', 'medium', 'hard', 'all'] as const).map((level) => (
+                    <Pressable
+                      key={level}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setDifficulty(level);
+                        setShowDifficultyModal(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.difficultyModalOption,
+                        {
+                          backgroundColor: difficulty === level ? colors.accentLight : 'transparent',
+                          borderColor: difficulty === level ? colors.accent : colors.border,
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={styles.difficultyModalOptionContent}>
+                        <View style={styles.difficultyIcons}>
+                          {level === 'easy' && (
+                            <Svg width={20} height={20} viewBox="0 -960 960 960">
+                              <Path
+                                d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                fill={difficulty === level ? colors.accent : colors.textSecondary}
+                              />
+                            </Svg>
+                          )}
+                          {level === 'medium' && (
+                            <>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                            </>
+                          )}
+                          {level === 'hard' && (
+                            <>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                            </>
+                          )}
+                          {level === 'all' && (
+                            <>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                              <Svg width={20} height={20} viewBox="0 -960 960 960">
+                                <Path
+                                  d="M240-400q0 52 21 98.5t60 81.5q-1-5-1-9v-9q0-32 12-60t35-51l113-111 113 111q23 23 35 51t12 60v9q0 4-1 9 39-35 60-81.5t21-98.5q0-50-18.5-94.5T648-574q-20 13-42 19.5t-45 6.5q-62 0-107.5-41T401-690q-39 33-69 68.5t-50.5 72Q261-513 250.5-475T240-400Zm240 52-57 56q-11 11-17 25t-6 29q0 32 23.5 55t56.5 23q33 0 56.5-23t23.5-55q0-16-6-29.5T537-292l-57-56Zm0-492v132q0 34 23.5 57t57.5 23q18 0 33.5-7.5T622-658l18-22q74 42 117 117t43 163q0 134-93 227T480-80q-134 0-227-93t-93-227q0-129 86.5-245T480-840Z"
+                                  fill={difficulty === level ? colors.accent : colors.textSecondary}
+                                />
+                              </Svg>
+                            </>
+                          )}
+                        </View>
+                        <Text
+                          style={[
+                            styles.difficultyModalOptionText,
+                            {
+                              color: difficulty === level ? colors.accent : colors.text,
+                              fontWeight: difficulty === level ? '700' : '600',
+                            },
+                          ]}
+                        >
+                          {level === 'easy' ? 'Easy' : level === 'medium' ? 'Medium' : level === 'hard' ? 'Hard' : 'All'}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </Pressable>
+            </Modal>
+          </Card>
+        </Animated.View>
+
+        {/* Categories Card */}
+        <Animated.View entering={FadeInDown.delay(400).springify()}>
           <Card style={styles.sectionCard}>
             <View style={styles.categoryHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -1118,116 +1368,155 @@ export default function GameSetupScreen() {
               contentContainerStyle={styles.categoriesListContent}
               showsVerticalScrollIndicator={false}
             >
-              {/* Categories: selected first, then rest */}
+              {/* Popular Categories Section */}
               {(() => {
                 const popularCategoryIds = ['msa', 'prophets', 'ramadan'];
-                const selectedCats = selectedCategories
+                const popularCategories = popularCategoryIds
                   .map(id => availableCategories.find(cat => cat.id === id))
-                  .filter((cat): cat is Category => !!cat);
-                const unselectedCats = availableCategories.filter(cat => !selectedCategories.includes(cat.id));
-                const popularUnselected = popularCategoryIds
-                  .map(id => unselectedCats.find(cat => cat.id === id))
-                  .filter((cat): cat is Category => !!cat);
-                const otherUnselected = unselectedCats.filter(cat => !popularCategoryIds.includes(cat.id));
-                const displaySections: { title?: string; categories: Category[] }[] = [];
-                if (selectedCats.length > 0) {
-                  displaySections.push({ title: 'Selected', categories: selectedCats });
-                }
-                if (popularUnselected.length > 0) {
-                  displaySections.push({ title: 'Popular Categories', categories: popularUnselected });
-                }
-                if (otherUnselected.length > 0) {
-                  displaySections.push({ title: displaySections.length > 0 ? 'More Categories' : undefined, categories: otherUnselected });
-                }
-
-                const renderCategoryItem = (category: Category) => (
-                  <Pressable
-                    key={category.id}
-                    onPress={() => {
-                      toggleCategory(category.id);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                    style={({ pressed }) => [
-                      styles.categoryListItem,
-                      {
-                        backgroundColor: pressed
-                          ? colors.accentLight
-                          : selectedCategories.includes(category.id)
-                          ? colors.accentLight
-                          : colors.cardBackground,
-                        borderColor: pressed
-                          ? colors.accent
-                          : selectedCategories.includes(category.id)
-                          ? colors.accent
-                          : colors.border,
-                        borderWidth: selectedCategories.includes(category.id) || pressed ? 2 : 1,
-                        transform: [{ scale: pressed ? 0.98 : 1 }],
-                        shadowColor: pressed ? colors.accent : 'transparent',
-                        shadowOffset: { width: 0, height: pressed ? 2 : 0 },
-                        shadowOpacity: pressed ? 0.15 : 0,
-                        shadowRadius: pressed ? 3 : 0,
-                        elevation: pressed ? 2 : 0,
-                      },
-                    ]}
-                    disabled={category.locked}
-                  >
-                    <View style={styles.categoryListItemContent}>
-                      <View style={styles.categoryListItemLeft}>
-                        {selectedCategories.includes(category.id) && (
-                          <View style={[styles.checkIconSmall, { backgroundColor: colors.accent }]}>
-                            <Text style={styles.checkText}>✓</Text>
-                          </View>
-                        )}
-                        <View style={styles.categoryListItemText}>
-                          <View style={styles.categoryListItemHeader}>
-                            <Text
-                              style={[
-                                styles.categoryListItemName,
-                                {
-                                  color: selectedCategories.includes(category.id)
-                                    ? colors.accent
-                                    : colors.text,
-                                  fontWeight: selectedCategories.includes(category.id)
-                                    ? '700'
-                                    : '600',
-                                },
-                              ]}
-                            >
-                              {category.name}
-                            </Text>
-                            {category.locked && (
-                              <Text style={[styles.lockIconSmall, { color: colors.textSecondary }]}>🔒</Text>
-                            )}
-                          </View>
-                          <Text style={[styles.categoryListItemDescription, { color: colors.textSecondary }]}>
-                            {category.description}
-                          </Text>
-                          {category.words.length > 0 ? (
-                            <Text style={[styles.categoryListItemExamples, { color: colors.textSecondary }]}>
-                              Examples: {category.words.slice(0, 4).join(', ')}
-                              {category.words.length > 4 && '...'}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-
+                  .filter((cat): cat is Category => cat !== undefined);
+                const otherCategories = availableCategories.filter(cat => !popularCategoryIds.includes(cat.id));
+                
                 return (
                   <>
-                    {displaySections.map((section, idx) => (
-                      <React.Fragment key={section.title ?? idx}>
-                        {section.title && (
-                          <Text style={[styles.popularSectionTitle, { color: colors.text }]}>
-                            {section.title}
-                          </Text>
-                        )}
-                        {section.categories.map(renderCategoryItem)}
-                        {section.title && idx < displaySections.length - 1 && (
-                          <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
-                        )}
-                      </React.Fragment>
+                    {popularCategories.length > 0 && (
+                      <>
+                        <Text style={[styles.popularSectionTitle, { color: colors.text }]}>
+                          Popular Categories
+                        </Text>
+                        {popularCategories.map((category) => (
+                          <Pressable
+                            key={category.id}
+                            onPress={() => {
+                              toggleCategory(category.id);
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            }}
+                            style={({ pressed }) => [
+                              styles.categoryListItem,
+                              {
+                                backgroundColor: pressed
+                                  ? colors.accentLight
+                                  : selectedCategories.includes(category.id)
+                                  ? colors.accentLight
+                                  : colors.cardBackground,
+                                borderColor: pressed
+                                  ? colors.accent
+                                  : selectedCategories.includes(category.id)
+                                  ? colors.accent
+                                  : colors.border,
+                                borderWidth: selectedCategories.includes(category.id) || pressed ? 2 : 1,
+                                transform: [{ scale: pressed ? 0.98 : 1 }],
+                                shadowColor: pressed ? colors.accent : 'transparent',
+                                shadowOffset: { width: 0, height: pressed ? 2 : 0 },
+                                shadowOpacity: pressed ? 0.15 : 0,
+                                shadowRadius: pressed ? 3 : 0,
+                                elevation: pressed ? 2 : 0,
+                              },
+                            ]}
+                          >
+                            <View style={styles.categoryListItemContent}>
+                              <View style={styles.categoryListItemLeft}>
+                                {selectedCategories.includes(category.id) && (
+                                  <View style={[styles.checkIconSmall, { backgroundColor: colors.accent }]}>
+                                    <Text style={styles.checkText}>✓</Text>
+                                  </View>
+                                )}
+                                <View style={styles.categoryListItemText}>
+                                  <View style={styles.categoryListItemHeader}>
+                                    <Text style={[styles.categoryListItemName, { color: colors.text }]}>
+                                      {category.name}
+                                    </Text>
+                                    {category.locked && (
+                                      <Text style={[styles.lockIconSmall, { color: colors.textSecondary }]}>🔒</Text>
+                                    )}
+                                  </View>
+                                  <Text style={[styles.categoryListItemDescription, { color: colors.textSecondary }]}>
+                                    {category.description}
+                                  </Text>
+                                  <Text style={[styles.categoryListItemExamples, { color: colors.textSecondary }]}>
+                                    {category.words.slice(0, 3).join(', ')}
+                                    {category.words.length > 3 && '...'}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                          </Pressable>
+                        ))}
+                        <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
+                      </>
+                    )}
+                    {otherCategories.map((category) => (
+                      <Pressable
+                        key={category.id}
+                        onPress={() => {
+                          toggleCategory(category.id);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }}
+                        style={({ pressed }) => [
+                          styles.categoryListItem,
+                          {
+                            backgroundColor: pressed
+                              ? colors.accentLight
+                              : selectedCategories.includes(category.id)
+                              ? colors.accentLight
+                              : colors.cardBackground,
+                            borderColor: pressed
+                              ? colors.accent
+                              : selectedCategories.includes(category.id)
+                              ? colors.accent
+                              : colors.border,
+                            borderWidth: selectedCategories.includes(category.id) || pressed ? 2 : 1,
+                            transform: [{ scale: pressed ? 0.98 : 1 }],
+                            shadowColor: pressed ? colors.accent : 'transparent',
+                            shadowOffset: { width: 0, height: pressed ? 2 : 0 },
+                            shadowOpacity: pressed ? 0.15 : 0,
+                            shadowRadius: pressed ? 3 : 0,
+                            elevation: pressed ? 2 : 0,
+                          },
+                        ]}
+                        disabled={category.locked}
+                      >
+                        <View style={styles.categoryListItemContent}>
+                          <View style={styles.categoryListItemLeft}>
+                            {selectedCategories.includes(category.id) && (
+                              <View style={[styles.checkIconSmall, { backgroundColor: colors.accent }]}>
+                                <Text style={styles.checkText}>✓</Text>
+                              </View>
+                            )}
+                            <View style={styles.categoryListItemText}>
+                              <View style={styles.categoryListItemHeader}>
+                                <Text
+                                  style={[
+                                    styles.categoryListItemName,
+                                    {
+                                      color: selectedCategories.includes(category.id)
+                                        ? colors.accent
+                                        : colors.text,
+                                      fontWeight: selectedCategories.includes(category.id)
+                                        ? '700'
+                                        : '600',
+                                    },
+                                  ]}
+                                >
+                                  {category.name}
+                                </Text>
+                              </View>
+                              <Text
+                                style={[styles.categoryListItemDescription, { color: colors.textSecondary }]}
+                              >
+                                {category.description}
+                              </Text>
+                              {category.words.length > 0 ? (
+                                <Text
+                                  style={[styles.categoryListItemExamples, { color: colors.textSecondary }]}
+                                >
+                                  Examples: {category.words.slice(0, 4).join(', ')}
+                                  {category.words.length > 4 && '...'}
+                                </Text>
+                              ) : null}
+                            </View>
+                          </View>
+                        </View>
+                      </Pressable>
                     ))}
                   </>
                 );
@@ -1544,6 +1833,62 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
+  difficultyContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs / 2,
+  },
+  difficultyIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  difficultyDropdown: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  difficultyDropdownContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  difficultyDropdownText: {
+    ...typography.body,
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  difficultyModalContent: {
+    borderRadius: 16,
+    padding: spacing.md,
+    width: '100%',
+    maxWidth: 400,
+    gap: spacing.xs,
+  },
+  difficultyModalOption: {
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    minHeight: 56,
+  },
+  difficultyModalOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  difficultyModalOptionText: {
+    ...typography.body,
+    fontSize: 16,
+    flex: 1,
+  },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1664,7 +2009,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   categoryChip: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md, // Increased for better touch target
     paddingHorizontal: spacing.md,
     borderRadius: 20,
     borderWidth: 1,

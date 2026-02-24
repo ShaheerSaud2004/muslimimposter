@@ -55,28 +55,3 @@ export const getScreenDimensions = () => ({
   height: SCREEN_HEIGHT,
   isIPad: isIPad(),
 });
-
-// Reference width for cue word scaling (e.g. standard iPhone)
-const CUE_WORD_REF_WIDTH = 390;
-const CUE_WORD_BASE_FONT_SIZE = 56;
-const CUE_WORD_MIN_FONT_SIZE = 28;
-
-/**
- * Get responsive font size for the cue/secret word so it stays readable on
- * small devices (e.g. iPhone mini) and doesn't get oversized on large screens.
- */
-export const getResponsiveCueWordFontSize = (): number => {
-  const scale = SCREEN_WIDTH / CUE_WORD_REF_WIDTH;
-  const scaled = Math.round(CUE_WORD_BASE_FONT_SIZE * scale);
-  return Math.max(CUE_WORD_MIN_FONT_SIZE, Math.min(CUE_WORD_BASE_FONT_SIZE, scaled));
-};
-
-/**
- * Minimum scale factor for cue word when it auto-shrinks (adjustsFontSizeToFit).
- * Higher = text won't shrink as much on small screens, keeping it readable.
- */
-export const getResponsiveCueWordMinimumScale = (): number => {
-  // On narrow screens, don't allow shrinking below 75% so the word stays readable
-  if (SCREEN_WIDTH <= 375) return 0.75;
-  return 0.6;
-};

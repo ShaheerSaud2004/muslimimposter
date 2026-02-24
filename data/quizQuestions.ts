@@ -336,6 +336,29 @@ export const quizQuestions: QuizQuestion[] = [
     difficulty: 'easy',
   },
   
+  // Islamic Values Questions
+  {
+    id: 'values-1',
+    categoryId: 'values',
+    question: 'Virtue of pardoning others',
+    answer: 'Forgiveness',
+    difficulty: 'easy',
+  },
+  {
+    id: 'values-2',
+    categoryId: 'values',
+    question: 'Quality of being humble and not showing off',
+    answer: 'Modesty',
+    difficulty: 'easy',
+  },
+  {
+    id: 'values-3',
+    categoryId: 'values',
+    question: 'Bond between Muslim men',
+    answer: 'Brotherhood',
+    difficulty: 'easy',
+  },
+  
   // Basic Islamic Terms Questions
   {
     id: 'basic-1',
@@ -516,6 +539,36 @@ export const quizQuestions: QuizQuestion[] = [
     categoryId: 'marriage',
     question: 'Decorative art applied to hands before wedding',
     answer: 'Henna',
+    difficulty: 'easy',
+  },
+  
+  // Charity & Zakat Questions
+  {
+    id: 'charity-1',
+    categoryId: 'charity-zakat',
+    question: 'Obligatory charity in Islam',
+    answer: 'Zakat',
+    difficulty: 'medium',
+  },
+  {
+    id: 'charity-2',
+    categoryId: 'charity-zakat',
+    question: 'Voluntary charity',
+    answer: 'Sadaqah',
+    difficulty: 'medium',
+  },
+  {
+    id: 'charity-3',
+    categoryId: 'charity-zakat',
+    question: 'Act of giving to others',
+    answer: 'Charity',
+    difficulty: 'easy',
+  },
+  {
+    id: 'charity-4',
+    categoryId: 'charity-zakat',
+    question: 'Children without parents',
+    answer: 'Orphans',
     difficulty: 'easy',
   },
   
@@ -779,6 +832,94 @@ export const quizQuestions: QuizQuestion[] = [
     question: 'Compiler of Sahih Muslim',
     answer: 'Imam Muslim',
     difficulty: 'hard',
+  },
+  
+  // Duas & Supplications Questions
+  {
+    id: 'duas-1',
+    categoryId: 'islamic-duas',
+    question: 'Dua for when traveling (Dua al-Safar)',
+    answer: 'Travel (Dua al-Safar)',
+    difficulty: 'easy',
+  },
+  {
+    id: 'duas-2',
+    categoryId: 'islamic-duas',
+    question: 'Dua before eating',
+    answer: 'Eating (Dua before eating)',
+    difficulty: 'easy',
+  },
+  {
+    id: 'duas-3',
+    categoryId: 'islamic-duas',
+    question: 'Dua before sleeping',
+    answer: 'Sleeping (Dua before sleeping)',
+    difficulty: 'easy',
+  },
+  {
+    id: 'duas-4',
+    categoryId: 'islamic-duas',
+    question: 'Dua for forgiveness',
+    answer: 'Forgiveness (Dua for forgiveness)',
+    difficulty: 'easy',
+  },
+  {
+    id: 'duas-5',
+    categoryId: 'islamic-duas',
+    question: 'Dua for parents',
+    answer: 'Parents (Dua for parents)',
+    difficulty: 'easy',
+  },
+  
+  // Islamic Etiquette Questions
+  {
+    id: 'etiquette-1',
+    categoryId: 'islamic-etiquette',
+    question: 'Islamic practice of cleaning after using the bathroom',
+    answer: 'Istinja',
+    difficulty: 'easy',
+  },
+  {
+    id: 'etiquette-2',
+    categoryId: 'islamic-etiquette',
+    question: 'Islamic practice of cleaning private parts with water',
+    answer: 'Istinbra',
+    difficulty: 'easy',
+  },
+  {
+    id: 'etiquette-3',
+    categoryId: 'islamic-etiquette',
+    question: 'Quality of being respectful',
+    answer: 'Respect',
+    difficulty: 'easy',
+  },
+  {
+    id: 'etiquette-4',
+    categoryId: 'islamic-etiquette',
+    question: 'Quality of being kind',
+    answer: 'Kindness',
+    difficulty: 'easy',
+  },
+  {
+    id: 'etiquette-5',
+    categoryId: 'islamic-etiquette',
+    question: 'Quality of being humble',
+    answer: 'Humility',
+    difficulty: 'easy',
+  },
+  {
+    id: 'etiquette-6',
+    categoryId: 'islamic-etiquette',
+    question: 'Quality of being patient',
+    answer: 'Patience',
+    difficulty: 'easy',
+  },
+  {
+    id: 'etiquette-7',
+    categoryId: 'islamic-etiquette',
+    question: 'Quality of being grateful',
+    answer: 'Gratitude',
+    difficulty: 'easy',
   },
   
   // Islamic Countries & Cities Questions
