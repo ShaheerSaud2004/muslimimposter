@@ -6,6 +6,9 @@ import {
   createPlayers,
   selectDifferentCategory,
   selectRandomCategory,
+  selectSingleRandomCategory,
+  selectRandomWord,
+  getCategoryName,
   getVotingTimeSeconds,
   generatePlayerNames,
 } from '../utils/game';
@@ -15,6 +18,7 @@ const mockCategories = [
   { id: 'prophets', name: 'Prophets', description: '', words: ['Adam', 'Nuh'], locked: false, isCustom: false },
   { id: 'seerah', name: 'Seerah', description: '', words: ['Hijrah', 'Badr'], locked: false, isCustom: false },
   { id: 'ramadan', name: 'Ramadan', description: '', words: ['Suhoor', 'Iftar'], locked: false, isCustom: false },
+  { id: 'quran-surahs', name: 'Quran Surahs', description: '', words: ['Al-Fatiha', 'Yasin'], locked: false, isCustom: false },
 ];
 
 describe('getVotingTimeSeconds', () => {
@@ -121,15 +125,15 @@ describe('createPlayers — imposter is different on Play Again', () => {
 
 describe('selectDifferentCategory — category is different on Play Again', () => {
   const RUNS = 50;
-  const categoryIds = mockCategories.map(c => c.id);
+  const threeCategoryIds = ['prophets', 'seerah', 'ramadan'];
 
   it('never returns the excluded category when 2+ categories available', () => {
     const excludeId = 'prophets';
 
     for (let i = 0; i < RUNS; i++) {
-      const result = selectDifferentCategory(categoryIds, mockCategories, excludeId);
+      const result = selectDifferentCategory(threeCategoryIds, mockCategories, excludeId);
       expect(result).not.toBe(excludeId);
-      expect(['seerah', 'ramadan']).toContain(result);
+      expect(threeCategoryIds).toContain(result);
     }
   });
 
@@ -138,7 +142,7 @@ describe('selectDifferentCategory — category is different on Play Again', () =
     const seen = new Set<string>();
 
     for (let i = 0; i < RUNS; i++) {
-      const result = selectDifferentCategory(categoryIds, mockCategories, excludeId);
+      const result = selectDifferentCategory(threeCategoryIds, mockCategories, excludeId);
       seen.add(result);
     }
 
@@ -166,6 +170,35 @@ describe('selectDifferentCategory — category is different on Play Again', () =
     );
     expect(result).toBe(mockCategories[0].id);
   });
+
+  it('with strictPool true, never returns a category outside the selected pool', () => {
+    const selectedOnly = ['seerah', 'ramadan'];
+    const excludeId = 'seerah';
+    const RUNS = 40;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectDifferentCategory(
+        selectedOnly,
+        mockCategories,
+        excludeId,
+        true
+      );
+      expect(selectedOnly).toContain(result);
+      expect(result).not.toBe(excludeId);
+      expect(result).toBe('ramadan');
+    }
+  });
+
+  it('with strictPool true, when only one category in pool and it is excluded, returns that same category', () => {
+    const selectedOnly = ['prophets'];
+    const result = selectDifferentCategory(
+      selectedOnly,
+      mockCategories,
+      'prophets',
+      true
+    );
+    expect(result).toBe('prophets');
+  });
 });
 
 describe('selectRandomCategory with exclude', () => {
@@ -181,5 +214,105 @@ describe('selectRandomCategory with exclude', () => {
       );
       expect(result).not.toBe('prophets');
     }
+  });
+
+  it('result is always one of the given categoryIds (never from outside pool)', () => {
+    const selectedIds = ['seerah', 'ramadan'];
+    const RUNS = 50;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectRandomCategory(selectedIds, mockCategories);
+      expect(selectedIds).toContain(result);
+      expect(['prophets', 'quran-surahs']).not.toContain(result);
+    }
+  });
+
+  it('filters out invalid category ids (missing, locked, or no words)', () => {
+    const withInvalid = ['seerah', 'nonexistent', 'ramadan'];
+    const categoriesWithLocked = [
+      ...mockCategories,
+      { id: 'locked-cat', name: 'Locked', description: '', words: ['A'], locked: true, isCustom: false },
+    ];
+    const RUNS = 30;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectRandomCategory(withInvalid, categoriesWithLocked);
+      expect(['seerah', 'ramadan']).toContain(result);
+    }
+  });
+});
+
+describe('selectSingleRandomCategory', () => {
+  it('returns one of the category ids when categories have words', () => {
+    const ids = mockCategories.map(c => c.id);
+    const RUNS = 40;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectSingleRandomCategory(mockCategories);
+      expect(ids).toContain(result);
+    }
+  });
+
+  it('returns empty string when no categories have words', () => {
+    const noWords = [
+      { id: 'a', name: 'A', description: '', words: [], locked: false, isCustom: false },
+    ];
+    expect(selectSingleRandomCategory(noWords)).toBe('');
+  });
+
+  it('excludes locked categories unless isCustom', () => {
+    const withLocked = [
+      { id: 'unlocked', name: 'U', description: '', words: ['x'], locked: false, isCustom: false },
+      { id: 'locked', name: 'L', description: '', words: ['y'], locked: true, isCustom: false },
+    ];
+    const RUNS = 30;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectSingleRandomCategory(withLocked);
+      expect(result).toBe('unlocked');
+    }
+  });
+});
+
+describe('selectRandomWord', () => {
+  it('returns a word from the list', () => {
+    const words = ['Hijrah', 'Badr', 'Suhoor'];
+    const RUNS = 20;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectRandomWord(words);
+      expect(words).toContain(result);
+    }
+  });
+
+  it('excludes used words when possible', () => {
+    const words = ['A', 'B', 'C'];
+    const used = ['A', 'B'];
+
+    for (let i = 0; i < 20; i++) {
+      const result = selectRandomWord(words, used);
+      expect(result).toBe('C');
+    }
+  });
+
+  it('when all words used, returns one of the words (reset behavior)', () => {
+    const words = ['X', 'Y'];
+    const used = ['X', 'Y'];
+
+    for (let i = 0; i < 10; i++) {
+      const result = selectRandomWord(words, used);
+      expect(words).toContain(result);
+    }
+  });
+});
+
+describe('getCategoryName', () => {
+  it('returns category name for known id', () => {
+    expect(getCategoryName('seerah', mockCategories)).toBe('Seerah');
+    expect(getCategoryName('ramadan', mockCategories)).toBe('Ramadan');
+  });
+
+  it('returns Unknown for unknown id', () => {
+    expect(getCategoryName('unknown-id', mockCategories)).toBe('Unknown');
   });
 });

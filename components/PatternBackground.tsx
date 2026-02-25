@@ -15,6 +15,7 @@ export const PatternBackground: React.FC = () => {
             backgroundColor: 'transparent',
           },
         ]}
+        pointerEvents="none"
       >
         {/* Subtle geometric pattern using simple views */}
         <View
@@ -59,6 +60,7 @@ export const PatternBackground: React.FC = () => {
             backgroundColor: colors.text,
           },
         ]}
+        pointerEvents="none"
       />
     );
   }

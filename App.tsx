@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { Easing, Platform } from 'react-native';
+import { Easing, Platform, Linking } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { GameProvider } from './contexts/GameContext';
 import MenuScreen from './screens/MenuScreen';
 import HowToPlayScreen from './screens/HowToPlayScreen';
@@ -19,7 +20,9 @@ import QuizAnswersReviewScreen from './screens/QuizAnswersReviewScreen';
 import RevealScreen from './screens/RevealScreen';
 import CreateCategoryScreen from './screens/CreateCategoryScreen';
 import GameConfirmationScreen from './screens/GameConfirmationScreen';
-import { Alert } from './components/Alert';
+import StatisticsScreen from './screens/StatisticsScreen';
+import { Alert, showAlert } from './components/Alert';
+import { checkForUpdate } from './utils/versionCheck';
 
 export type RootStackParamList = {
   Menu: undefined;
@@ -34,16 +37,50 @@ export type RootStackParamList = {
   QuizAnswersReview: undefined;
   Reveal: undefined;
   CreateCategory: undefined;
+  Statistics: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 function AppContent() {
   const { theme } = useTheme();
-  
+  const versionCheckDone = useRef(false);
+
   // Determine StatusBar style based on theme
   // 'dark' theme uses light content, others use dark content
   const statusBarStyle = theme === 'dark' ? 'light' : 'dark';
+
+  // Version check on launch (skip on web)
+  useEffect(() => {
+    if (Platform.OS === 'web' || versionCheckDone.current) return;
+    versionCheckDone.current = true;
+    checkForUpdate().then((result) => {
+      if (result.type === 'update-required') {
+        showAlert({
+          title: 'Update required',
+          message: 'A new version of Khafī is required to continue. Please update from the App Store.',
+          buttons: [
+            {
+              text: 'Update',
+              onPress: () => Linking.openURL(result.storeUrl).catch(() => {}),
+            },
+          ],
+        });
+      } else if (result.type === 'update-optional') {
+        showAlert({
+          title: 'Update available',
+          message: `A new version of Khafī (${result.latestVersion}) is available. Update now for the latest features.`,
+          buttons: [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Update',
+              onPress: () => Linking.openURL(result.storeUrl).catch(() => {}),
+            },
+          ],
+        });
+      }
+    });
+  }, []);
 
   const onNavigationReady = () => {
     if (Platform.OS !== 'web') {
@@ -126,6 +163,7 @@ function AppContent() {
           <Stack.Screen name="QuizAnswersReview" component={QuizAnswersReviewScreen} />
           <Stack.Screen name="Reveal" component={RevealScreen} />
           <Stack.Screen name="CreateCategory" component={CreateCategoryScreen} />
+          <Stack.Screen name="Statistics" component={StatisticsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
       <StatusBar style={statusBarStyle} />
@@ -154,9 +192,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <GameProvider>
-          <AppContent />
-        </GameProvider>
+        <LanguageProvider>
+          <GameProvider>
+            <AppContent />
+          </GameProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

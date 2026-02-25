@@ -21,6 +21,7 @@ import { typography, spacing } from '../theme';
 import { saveCustomCategory } from '../utils/storage';
 import { Category } from '../types';
 import * as Haptics from 'expo-haptics';
+import { NavigationHeader } from '../components/NavigationHeader';
 
 type CreateCategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -110,6 +111,7 @@ export default function CreateCategoryScreen() {
       edges={['top', 'bottom']}
     >
       <PatternBackground />
+      <NavigationHeader showGetStarted={false} showSettings={false} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

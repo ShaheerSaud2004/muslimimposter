@@ -19,21 +19,24 @@ export const saveSettings = async (settings: Partial<AppSettings>): Promise<void
   }
 };
 
+const defaultSettings: AppSettings = {
+  theme: 'dark',
+  locale: 'en',
+  unlockedCategories: [],
+  customCategories: [],
+};
+
 export const getSettings = async (): Promise<AppSettings> => {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (data) {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data) as Partial<AppSettings>;
+      return { ...defaultSettings, ...parsed };
     }
   } catch (error) {
     console.error('Error loading settings:', error);
   }
-  
-  return {
-    theme: 'dark', // Warm Majlis - default theme
-    unlockedCategories: [],
-    customCategories: [],
-  };
+  return { ...defaultSettings };
 };
 
 export const saveCustomCategory = async (category: Category): Promise<void> => {
@@ -141,6 +144,27 @@ export const clearSessionUsedQuestionIds = (): void => {
   sessionUsedQuestionIds = [];
 };
 
+// Session-only: used words per category (cleared on New Game or when user says No to "Continue with category?")
+// Ensures no word repeats in the same session for that category.
+let sessionUsedWordsByCategory: Record<string, string[]> = {};
+
+export const getSessionUsedWords = (categoryId: string): string[] => {
+  return [...(sessionUsedWordsByCategory[categoryId] ?? [])];
+};
+
+export const addSessionUsedWord = (categoryId: string, word: string): void => {
+  if (!sessionUsedWordsByCategory[categoryId]) {
+    sessionUsedWordsByCategory[categoryId] = [];
+  }
+  if (!sessionUsedWordsByCategory[categoryId].includes(word)) {
+    sessionUsedWordsByCategory[categoryId].push(word);
+  }
+};
+
+export const clearSessionUsedWords = (): void => {
+  sessionUsedWordsByCategory = {};
+};
+
 // Game results tracking
 export interface GameResult {
   word: string;
@@ -150,6 +174,8 @@ export interface GameResult {
   numPlayers: number;
   numImposters: number;
   mode: 'word' | 'question' | 'quiz';
+  imposterNames?: string[];   // Names of imposters for display on stats
+  winnerNames?: string[];     // Names of winning team (normal players when players won, imposters when imposters won)
 }
 
 export const saveGameResult = async (result: GameResult): Promise<void> => {

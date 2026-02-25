@@ -1,0 +1,403 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  RefreshControl,
+} from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { RootStackParamList } from '../App';
+import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { PatternBackground } from '../components/PatternBackground';
+import { Card } from '../components/Card';
+import { typography, spacing } from '../theme';
+import * as Haptics from 'expo-haptics';
+import { getGameResults, clearGameResults, type GameResult } from '../utils/storage';
+import { showAlert } from '../components/Alert';
+import { getMaxContentWidth } from '../utils/responsive';
+import { NavigationHeader } from '../components/NavigationHeader';
+
+type StatisticsScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Statistics'
+>;
+
+const RECENT_LIMIT = 10;
+
+function formatDate(timestamp: number): string {
+  const d = new Date(timestamp);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) {
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  }
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+}
+
+export default function StatisticsScreen() {
+  const navigation = useNavigation<StatisticsScreenNavigationProp>();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const maxWidth = getMaxContentWidth();
+  const [results, setResults] = useState<GameResult[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadResults = useCallback(async () => {
+    const data = await getGameResults();
+    setResults(data);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadResults();
+    }, [loadResults])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await loadResults();
+    setRefreshing(false);
+  }, [loadResults]);
+
+  const totalRounds = results.length;
+  const playersWon = results.filter((r) => r.wasCorrect).length;
+  const impostersWon = totalRounds - playersWon;
+  const winRate = totalRounds > 0 ? Math.round((playersWon / totalRounds) * 100) : 0;
+  const recentResults = [...results].reverse().slice(0, RECENT_LIMIT);
+
+  const handleClearStats = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    showAlert({
+      title: t('stats.clearConfirmTitle'),
+      message: t('stats.clearConfirmMessage'),
+      buttons: [
+        { text: t('settings.cancel'), style: 'cancel' },
+        {
+          text: t('stats.clearStats'),
+          style: 'destructive',
+          onPress: async () => {
+            await clearGameResults();
+            setResults([]);
+          },
+        },
+      ],
+    });
+  };
+
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top', 'bottom']}
+    >
+      <PatternBackground />
+      <NavigationHeader showGetStarted={false} showSettings={false} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { maxWidth, alignSelf: 'center', width: '100%', paddingBottom: Math.max(spacing.xxl, insets.bottom + 40) },
+        ]}
+        showsVerticalScrollIndicator={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
+        }
+      >
+        <Animated.View entering={FadeInDown.delay(0).springify()}>
+          <View style={styles.header}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.goBack();
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.backButton, { color: colors.accent }]}>{t('common.back')}</Text>
+            </Pressable>
+            <Text style={[styles.title, { color: colors.text }]}>{t('stats.title')}</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              {t('stats.subtitle')}
+            </Text>
+          </View>
+
+          {totalRounds === 0 ? (
+            <Animated.View entering={FadeIn.delay(100)}>
+              <Card style={[styles.emptyCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                <Text style={[styles.emptyIcon, { color: colors.textSecondary }]}>📊</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('stats.noGamesYet')}</Text>
+                <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
+                  {t('stats.noGamesYetMessage')}
+                </Text>
+              </Card>
+            </Animated.View>
+          ) : (
+            <>
+              <View style={styles.statsGrid}>
+                <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.statBox}>
+                  <Card style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                    <Text style={[styles.statValue, { color: colors.accent }]}>{totalRounds}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('stats.totalRounds')}</Text>
+                  </Card>
+                </Animated.View>
+                <Animated.View entering={FadeInDown.delay(120).springify()} style={styles.statBox}>
+                  <Card style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                    <Text style={[styles.statValue, { color: colors.doubleAgent }]}>{playersWon}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('stats.playersWon')}</Text>
+                  </Card>
+                </Animated.View>
+                <Animated.View entering={FadeInDown.delay(160).springify()} style={styles.statBox}>
+                  <Card style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                    <Text style={[styles.statValue, { color: colors.imposter }]}>{impostersWon}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('stats.impostersWon')}</Text>
+                  </Card>
+                </Animated.View>
+                <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.statBox}>
+                  <Card style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                    <Text style={[styles.statValue, { color: colors.accent }]}>{winRate}%</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('stats.winRate')}</Text>
+                  </Card>
+                </Animated.View>
+              </View>
+
+              {recentResults.length > 0 && (
+                <Animated.View entering={FadeInDown.delay(240).springify()} style={styles.recentSection}>
+                  <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                    {t('stats.recentGames')}
+                  </Text>
+                  <Card style={[styles.recentCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                    {recentResults.map((r, i) => (
+                      <View
+                        key={`${r.timestamp}-${i}`}
+                        style={[
+                          styles.recentRow,
+                          i < recentResults.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                        ]}
+                      >
+                        <View style={styles.recentLeft}>
+                          <Text style={[styles.recentWord, { color: colors.text }]} numberOfLines={1}>
+                            {r.word}
+                          </Text>
+                          <Text style={[styles.recentCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {r.category}
+                          </Text>
+                          {r.imposterNames && r.imposterNames.length > 0 && (
+                            <Text style={[styles.recentImposter, { color: colors.imposter }]} numberOfLines={1}>
+                              {t('stats.imposter')}: {r.imposterNames.join(', ')}
+                            </Text>
+                          )}
+                          {r.winnerNames && r.winnerNames.length > 0 && (
+                            <Text style={[styles.recentWinners, { color: r.wasCorrect ? colors.doubleAgent : colors.imposter }]} numberOfLines={2}>
+                              {t('stats.winners')}: {r.winnerNames.join(', ')}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={styles.recentRight}>
+                          <View style={[styles.recentBadge, { backgroundColor: r.wasCorrect ? colors.doubleAgent + '30' : colors.imposter + '30' }]}>
+                            <Text style={[styles.recentBadgeText, { color: r.wasCorrect ? colors.doubleAgent : colors.imposter }]}>
+                              {r.wasCorrect ? t('stats.won') : t('stats.lost')}
+                            </Text>
+                          </View>
+                          <Text style={[styles.recentDate, { color: colors.textSecondary }]}>
+                            {formatDate(r.timestamp)}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </Card>
+                </Animated.View>
+              )}
+
+              <Animated.View entering={FadeIn.delay(320)} style={styles.clearSection}>
+                <Pressable
+                  onPress={handleClearStats}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={({ pressed }) => [
+                    styles.clearButton,
+                    { borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
+                  ]}
+                >
+                  <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>
+                    {t('stats.clearStats')}
+                  </Text>
+                </Pressable>
+              </Animated.View>
+            </>
+          )}
+        </Animated.View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    width: '100%',
+  },
+  header: {
+    marginBottom: spacing.xl,
+  },
+  backButton: {
+    ...typography.bodyBold,
+    fontSize: 16,
+    marginBottom: spacing.sm,
+  },
+  title: {
+    ...typography.heading,
+    fontSize: 28,
+    marginBottom: spacing.sm,
+    fontWeight: '600',
+  },
+  subtitle: {
+    ...typography.body,
+    fontSize: 15,
+    opacity: 0.85,
+  },
+  emptyCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    ...typography.heading,
+    fontSize: 20,
+    marginBottom: spacing.xs,
+  },
+  emptyMessage: {
+    ...typography.body,
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -spacing.xs,
+    marginBottom: spacing.xl,
+  },
+  statBox: {
+    width: '50%',
+    padding: spacing.xs,
+  },
+  statCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  statValue: {
+    ...typography.heading,
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    ...typography.caption,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  recentSection: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.xs,
+  },
+  recentCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  recentLeft: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  recentWord: {
+    ...typography.bodyBold,
+    fontSize: 16,
+  },
+  recentCategory: {
+    ...typography.caption,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  recentImposter: {
+    ...typography.caption,
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  recentWinners: {
+    ...typography.caption,
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  recentRight: {
+    alignItems: 'flex-end',
+  },
+  recentBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: 8,
+    marginBottom: spacing.xs,
+  },
+  recentBadgeText: {
+    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  recentDate: {
+    ...typography.caption,
+    fontSize: 11,
+  },
+  clearSection: {
+    alignItems: 'center',
+  },
+  clearButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  clearButtonText: {
+    ...typography.body,
+    fontSize: 15,
+  },
+});
