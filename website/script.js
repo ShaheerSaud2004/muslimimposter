@@ -361,41 +361,48 @@ if (feedbackForm) {
     });
 }
 
-// Updates carousel (Instagram-style click-through)
+// Updates carousel: click or swipe on content to change slides (no arrows or dots)
 (function () {
     const carousel = document.getElementById('updates-carousel');
     if (!carousel) return;
 
+    const viewport = carousel.querySelector('.updates-carousel-viewport');
     const track = carousel.querySelector('.updates-carousel-track');
     const slides = carousel.querySelectorAll('.updates-carousel-slide');
-    const prevBtn = carousel.querySelector('.updates-carousel-prev');
-    const nextBtn = carousel.querySelector('.updates-carousel-next');
-    const dots = carousel.querySelectorAll('.updates-carousel-dot');
     const total = slides.length;
 
     let index = 0;
 
     function goTo(i) {
         index = Math.max(0, Math.min(i, total - 1));
-        const offset = -index * 100;
-        track.style.transform = 'translateX(' + offset + '%)';
-        dots.forEach(function (dot, d) {
-            dot.classList.toggle('active', d === index);
-            dot.setAttribute('aria-selected', d === index ? 'true' : 'false');
-        });
-        prevBtn.setAttribute('aria-disabled', index === 0 ? 'true' : 'false');
-        nextBtn.setAttribute('aria-disabled', index === total - 1 ? 'true' : 'false');
+        track.style.transform = 'translateX(' + (-index * 100) + '%)';
     }
 
-    if (prevBtn) {
-        prevBtn.addEventListener('click', function () { goTo(index - 1); });
-    }
-    if (nextBtn) {
-        nextBtn.addEventListener('click', function () { goTo(index + 1); });
-    }
-    dots.forEach(function (dot, i) {
-        dot.addEventListener('click', function () { goTo(i); });
+    // Click anywhere on carousel: left half = previous, right half = next (ignore clicks on links)
+    carousel.addEventListener('click', function (e) {
+        if (e.target.closest('a')) return;
+        const rect = carousel.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        if (x < rect.width / 2) {
+            goTo(index - 1);
+        } else {
+            goTo(index + 1);
+        }
     });
+
+    // Swipe: touch left/right to change slide
+    let touchStartX = 0;
+    viewport.addEventListener('touchstart', function (e) {
+        touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    viewport.addEventListener('touchend', function (e) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchStartX - touchEndX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) goTo(index + 1);
+            else goTo(index - 1);
+        }
+    }, { passive: true });
 
     carousel.addEventListener('keydown', function (e) {
         if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(index - 1); }

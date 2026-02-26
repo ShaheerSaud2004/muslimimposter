@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khafī — Instagram captures (carousel slides)</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Instagram portrait: 1080×1350 with white padding around content */
+        body.ig-captures {
+            margin: 0;
+            background: #e5e5e5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0 48px;
+            font-family: var(--font-primary);
+        }
+        .ig-capture-frame {
+            width: 1080px;
+            height: 1350px;
+            background: #ffffff;
+            padding: 72px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .ig-capture-frame .ig-slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+        }
+        .ig-capture-frame .ig-slide.active {
+            display: flex;
+        }
+        .ig-capture-frame .ig-slide-inner {
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+.ig-capture-frame .updates-ig-visual,
+        .ig-capture-frame .updates-ig-box {
+            max-width: 936px;
+            max-height: 1206px;
+            margin: 0;
+        }
+        .ig-capture-frame .updates-ig-box--boring {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+        .ig-capture-frame .updates-ig-phone {
+            width: 220px;
+        }
+        .ig-nav {
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+        .ig-nav button {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-primary);
+            background: #fff;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .ig-nav button:hover {
+            background: var(--color-accent-lighter);
+        }
+        .ig-nav span {
+            min-width: 100px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="ig-captures">
+    <p style="margin: 0 0 16px; font-size: 14px; color: var(--color-text-muted);">Download the 4 carousel slides in high quality (2160×2700 PNG each). Use Prev/Next to preview, or click Download all 4.</p>
+    <div class="ig-capture-frame" id="ig-frame">
+        <div class="ig-slide active" data-slide="0">
+            <div class="ig-slide-inner">
+                <div class="updates-ig-visual" aria-label="What's new in Khafī">
+                    <div class="updates-ig-content">
+                        <div class="updates-ig-text">
+                            <p class="updates-ig-eyebrow">Khafī v1.1.5</p>
+                            <h3 class="updates-ig-visual-title">New Update</h3>
+                            <p class="updates-ig-tagline">What's new inside</p>
+                        </div>
+                        <div class="updates-ig-phones">
+                            <figure class="updates-ig-phone">
+                                <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.08-1284x2778-frame.png" alt="Collections" />
+                            </figure>
+                            <figure class="updates-ig-phone">
+                                <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.36-1284x2778-frame.png" alt="Learn &amp; Share" />
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ig-slide" data-slide="1">
+            <div class="ig-slide-inner">
+                <div class="updates-ig-box">
+                    <div class="updates-ig-box-inner updates-ig-box--img-left">
+                        <div class="updates-ig-box-img">
+                            <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.08-1284x2778-frame.png" alt="Collections screen" />
+                        </div>
+                        <div class="updates-ig-box-text">
+                            <h4 class="updates-ig-box-title">Collections</h4>
+                            <p>We added Collections! They are preset groups of categories so you can start a game faster. Pick “Ramadan” or “Most popular” in one tap instead of choosing categories one by one.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ig-slide" data-slide="2">
+            <div class="ig-slide-inner">
+                <div class="updates-ig-box">
+                    <div class="updates-ig-box-inner updates-ig-box--img-right">
+                        <div class="updates-ig-box-text">
+                            <h4 class="updates-ig-box-title">Learn &amp; Share</h4>
+                            <p>After each round, a “Learn about [word]” section explains the secret word. Tap “Watch video” to dig deeper or share from the header. Especially helpful for Seerah and Islamic-related topics—learn more about them as you play.</p>
+                        </div>
+                        <div class="updates-ig-box-img">
+                            <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.36-1284x2778-frame.png" alt="Learn &amp; Share screen" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ig-slide" data-slide="3">
+            <div class="ig-slide-inner">
+                <div class="updates-ig-box updates-ig-box--boring" aria-label="And other boring updates">
+                    <div class="updates-ig-box-inner updates-ig-box--text-only">
+                        <p class="updates-ig-boring-label">v1.1.5</p>
+                        <div class="updates-ig-box-text">
+                            <h4 class="updates-ig-box-title">And other boring updates</h4>
+                            <p>Play Again now uses a smoother flow: the screen slides to the next round before content updates, so there’s no brief flash of the next game. New Game and Play Again buttons have been moved higher on the results screen for easier access.</p>
+                            <p>This release also includes general polish and small bug fixes. Back button concept credit: <a href="https://www.instagram.com/z1a.khan/" target="_blank" rel="noopener noreferrer">@z1a.khan</a>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ig-nav">
+        <button type="button" id="ig-prev" aria-label="Previous slide">← Prev</button>
+        <span id="ig-counter">Slide 1 of 4</span>
+        <button type="button" id="ig-next" aria-label="Next slide">Next →</button>
+        <button type="button" id="ig-download" aria-label="Download current slide">Download this slide</button>
+        <button type="button" id="ig-download-all" aria-label="Download all 4 slides">Download all 4</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+    <script>
+        (function () {
+            const frame = document.getElementById('ig-frame');
+            const slides = frame.querySelectorAll('.ig-slide');
+            const prevBtn = document.getElementById('ig-prev');
+            const nextBtn = document.getElementById('ig-next');
+            const downloadBtn = document.getElementById('ig-download');
+            const downloadAllBtn = document.getElementById('ig-download-all');
+            const counter = document.getElementById('ig-counter');
+            const total = slides.length;
+            const scale = 2;
+            const w = 1080;
+            const h = 1350;
+            let index = 0;
+            function show(i) {
+                index = Math.max(0, Math.min(i, total - 1));
+                slides.forEach(function (s, j) { s.classList.toggle('active', j === index); });
+                counter.textContent = 'Slide ' + (index + 1) + ' of ' + total;
+                prevBtn.disabled = index === 0;
+                nextBtn.disabled = index === total - 1;
+            }
+            function captureAndDownload(slideIndex, done) {
+                show(slideIndex);
+                setTimeout(function () {
+                    if (typeof html2canvas === 'undefined') {
+                        if (done) done(); return;
+                    }
+                    html2canvas(frame, {
+                        scale: scale,
+                        width: w,
+                        height: h,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff'
+                    }).then(function (canvas) {
+                        var a = document.createElement('a');
+                        a.href = canvas.toDataURL('image/png');
+                        a.download = 'khafi-ig-slide-' + (slideIndex + 1) + '.png';
+                        a.click();
+                        if (done) done();
+                    }).catch(function (err) {
+                        console.error(err);
+                        if (done) done();
+                    });
+                }, 150);
+            }
+            prevBtn.addEventListener('click', function () { show(index - 1); });
+            nextBtn.addEventListener('click', function () { show(index + 1); });
+            downloadBtn.addEventListener('click', function () {
+                if (typeof html2canvas === 'undefined') {
+                    alert('html2canvas is loading. Try again in a moment.');
+                    return;
+                }
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = '…';
+                captureAndDownload(index, function () {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = 'Download this slide';
+                });
+            });
+            downloadAllBtn.addEventListener('click', function () {
+                if (typeof html2canvas === 'undefined') {
+                    alert('html2canvas is loading. Try again in a moment.');
+                    return;
+                }
+                downloadAllBtn.disabled = true;
+                downloadAllBtn.textContent = 'Preparing…';
+                var i = 0;
+                function next() {
+                    if (i >= total) {
+                        downloadAllBtn.disabled = false;
+                        downloadAllBtn.textContent = 'Download all 4';
+                        show(index);
+                        return;
+                    }
+                    downloadAllBtn.textContent = (i + 1) + ' of 4…';
+                    captureAndDownload(i, function () {
+                        i++;
+                        next();
+                    });
+                }
+                next();
+            });
+            show(0);
+        })();
+    </script>
+</body>
+</html>

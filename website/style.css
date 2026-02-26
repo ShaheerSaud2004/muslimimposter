@@ -1431,12 +1431,14 @@ body {
     position: relative;
     max-width: 1080px;
     margin: 0 auto var(--spacing-xxl);
+    cursor: pointer;
 }
 
 .updates-carousel-viewport {
     overflow: hidden;
     border-radius: 28px;
     min-height: 520px;
+    cursor: pointer;
 }
 
 .updates-carousel-track {
