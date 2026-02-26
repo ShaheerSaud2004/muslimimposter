@@ -919,6 +919,12 @@ body {
     overflow: hidden;
 }
 
+.download .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .download::before {
     content: '';
     position: absolute;
@@ -954,10 +960,15 @@ body {
     padding: var(--spacing-xl) var(--spacing-xxl) var(--spacing-xxl);
     padding-top: var(--spacing-sm);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .download-logo-wrap {
     margin-bottom: 0;
+    width: 100%;
+    text-align: center;
 }
 
 .download-logo {
@@ -970,7 +981,7 @@ body {
 }
 
 .download-badge-label {
-    display: inline-block;
+    display: block;
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -978,6 +989,8 @@ body {
     color: var(--color-primary);
     margin-top: -0.25rem;
     margin-bottom: var(--spacing-sm);
+    text-align: center;
+    width: 100%;
 }
 
 .download-headline {
@@ -987,6 +1000,8 @@ body {
     letter-spacing: -0.03em;
     line-height: 1.15;
     margin-bottom: var(--spacing-sm);
+    text-align: center;
+    width: 100%;
 }
 
 .download-tagline {
@@ -997,6 +1012,7 @@ body {
     max-width: 360px;
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
 }
 
 /* Official-style App Store badge */
@@ -1378,7 +1394,7 @@ body {
 /* Updates Section */
 .updates {
     padding: var(--spacing-xxxl) 0;
-    background: linear-gradient(180deg, var(--color-background) 0%, var(--color-background-alt) 100%);
+    background: linear-gradient(180deg, var(--color-background) 0%, var(--color-background-alt) 50%, var(--color-background) 100%);
     position: relative;
     overflow: hidden;
 }
@@ -1393,13 +1409,579 @@ body {
     background: linear-gradient(90deg, transparent, var(--color-border), transparent);
 }
 
+.updates .section-title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    letter-spacing: -0.02em;
+    margin-bottom: var(--spacing-sm);
+}
+
+.updates .section-subtitle {
+    color: var(--color-text-muted);
+    font-size: 1.0625rem;
+    font-weight: 500;
+}
+
 .updates-header {
     text-align: center;
     margin-bottom: var(--spacing-xxl);
 }
 
+/* Instagram-style carousel: click through update "posts" */
+.updates-carousel {
+    position: relative;
+    max-width: 1080px;
+    margin: 0 auto var(--spacing-xxl);
+}
+
+.updates-carousel-viewport {
+    overflow: hidden;
+    border-radius: 28px;
+    min-height: 520px;
+}
+
+.updates-carousel-track {
+    display: flex;
+    align-items: stretch;
+    min-height: 520px;
+    transition: transform 0.35s ease-out;
+    will-change: transform;
+}
+
+.updates-carousel-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    min-height: 520px;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.updates-carousel-slide .updates-ig-visual,
+.updates-carousel-slide .updates-ig-box {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    width: 100%;
+    min-height: 100%;
+    align-self: stretch;
+}
+
+/* Boring slide: card fills height; center text block in the middle of the card */
+.updates-carousel-slide .updates-ig-box--boring {
+    height: 100%;
+    position: relative;
+}
+
+.updates-carousel-slide .updates-ig-box--boring .updates-ig-box-inner {
+    min-height: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 100%;
+    flex: none;
+    padding: 0 var(--spacing-md);
+    box-sizing: border-box;
+}
+
+/* First slide same size as others: match padding and width */
+.updates-carousel-slide .updates-ig-visual {
+    padding: var(--spacing-xxxl) var(--spacing-xxl);
+    max-width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+
+.updates-carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--color-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(44, 36, 22, 0.15);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.updates-carousel-btn:hover {
+    background: #fff;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 4px 20px rgba(44, 36, 22, 0.2);
+}
+
+.updates-carousel-btn:active {
+    transform: translateY(-50%) scale(0.98);
+}
+
+.updates-carousel-prev {
+    left: -24px;
+}
+
+.updates-carousel-next {
+    right: -24px;
+}
+
+.updates-carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: var(--spacing-lg);
+}
+
+.updates-carousel-dot {
+    width: 8px;
+    height: 8px;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-border);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.updates-carousel-dot:hover {
+    background: var(--color-text-muted);
+}
+
+.updates-carousel-dot.active {
+    background: var(--color-primary);
+    transform: scale(1.2);
+}
+
+@media (max-width: 768px) {
+    .updates-carousel-prev { left: 8px; }
+    .updates-carousel-next { right: 8px; }
+    .updates-carousel-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* IG post 1: Visual block (screenshot for Instagram) */
+.updates-ig-visual {
+    max-width: 1080px;
+    margin: 0 auto var(--spacing-xxl);
+    padding: var(--spacing-xxxl) var(--spacing-xl);
+    background: linear-gradient(165deg, #FFFFFF 0%, var(--color-accent-lighter) 50%, var(--color-accent-lighter) 100%);
+    border-radius: 28px;
+    border: 1px solid rgba(212, 165, 116, 0.4);
+    box-shadow:
+        0 4px 16px rgba(44, 36, 22, 0.06),
+        0 16px 48px rgba(139, 90, 60, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.updates-ig-content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xxl);
+    width: 100%;
+}
+
+.updates-ig-text {
+    flex: 0 1 auto;
+    min-width: 200px;
+    text-align: left;
+}
+
+.updates-ig-visual::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120%;
+    height: 80%;
+    background: radial-gradient(ellipse at center, rgba(212, 165, 116, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.updates-ig-text .updates-ig-eyebrow,
+.updates-ig-text .updates-ig-visual-title,
+.updates-ig-text .updates-ig-tagline {
+    text-align: left;
+}
+
+.updates-ig-eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin: 0 0 var(--spacing-sm);
+    position: relative;
+}
+
+.updates-ig-visual-title {
+    font-size: clamp(2.25rem, 5.5vw, 3rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 var(--spacing-xs);
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    position: relative;
+}
+
+.updates-ig-tagline {
+    font-size: 1.0625rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--spacing-md);
+    position: relative;
+}
+
+.updates-ig-text .updates-ig-tagline::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 3px;
+    margin: var(--spacing-sm) 0 0;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    border-radius: 2px;
+    opacity: 0.8;
+}
+
+.updates-ig-phones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-xl);
+    flex: 0 1 auto;
+    position: relative;
+}
+
+.updates-ig-phone {
+    margin: 0;
+    flex: 0 1 auto;
+    width: 280px;
+    max-width: 100%;
+}
+
+.updates-ig-phone:first-child img {
+    transform: rotate(-3deg);
+}
+
+.updates-ig-phone:last-child img {
+    transform: rotate(3deg);
+}
+
+.updates-ig-phone img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    box-shadow:
+        0 8px 24px rgba(44, 36, 22, 0.12),
+        0 24px 56px rgba(139, 90, 60, 0.18);
+}
+
+/* Separate boxes below (same vibe as New Update card) */
+.updates-ig-box {
+    max-width: 1080px;
+    margin: 0 auto var(--spacing-xl);
+    padding: var(--spacing-xxl) var(--spacing-xl);
+    background: linear-gradient(165deg, #FFFFFF 0%, var(--color-accent-lighter) 50%, var(--color-accent-lighter) 100%);
+    border-radius: 28px;
+    border: 1px solid rgba(212, 165, 116, 0.4);
+    box-shadow:
+        0 4px 16px rgba(44, 36, 22, 0.06),
+        0 16px 48px rgba(139, 90, 60, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease;
+}
+
+/* Collections & Settings & Learn: slightly elevated */
+.updates-ig-box--img-left,
+.updates-ig-box--img-right {
+    padding: var(--spacing-xxxl) var(--spacing-xxl);
+}
+
+.updates-ig-box-inner {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xxl);
+    width: 100%;
+}
+
+.updates-ig-box--img-left .updates-ig-box-inner,
+.updates-ig-box--img-right .updates-ig-box-inner {
+    gap: var(--spacing-xxxl);
+    align-items: center;
+}
+
+.updates-ig-box--img-left .updates-ig-box-img { order: 1; }
+.updates-ig-box--img-left .updates-ig-box-text { order: 2; }
+.updates-ig-box--img-right .updates-ig-box-text { order: 1; }
+.updates-ig-box--img-right .updates-ig-box-img { order: 2; }
+
+.updates-ig-box-img {
+    flex: 0 1 280px;
+    max-width: 100%;
+}
+
+.updates-ig-box--img-left .updates-ig-box-img,
+.updates-ig-box--img-right .updates-ig-box-img {
+    flex: 0 1 300px;
+}
+
+.updates-ig-box-img img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 20px;
+    box-shadow:
+        0 10px 28px rgba(44, 36, 22, 0.12),
+        0 28px 64px rgba(139, 90, 60, 0.2);
+}
+
+.updates-ig-box-text {
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
+.updates-ig-box--img-left .updates-ig-box-text,
+.updates-ig-box--img-right .updates-ig-box-text {
+    flex: 1 1 320px;
+}
+
+.updates-ig-box-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 0 0 var(--spacing-sm);
+    letter-spacing: -0.02em;
+}
+
+.updates-ig-box--img-left .updates-ig-box-title,
+.updates-ig-box--img-right .updates-ig-box-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-md);
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.updates-ig-box--img-left .updates-ig-box-title::after,
+.updates-ig-box--img-right .updates-ig-box-title::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    margin-top: var(--spacing-sm);
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    border-radius: 2px;
+    opacity: 0.9;
+}
+
+.updates-ig-box-text p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.updates-ig-box--img-left .updates-ig-box-text p,
+.updates-ig-box--img-right .updates-ig-box-text p {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--color-text);
+}
+
+.updates-ig-box-text a {
+    color: var(--color-accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.updates-ig-box-text a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.updates-ig-box--text-only .updates-ig-box-inner {
+    justify-content: center;
+}
+
+.updates-ig-box--text-only .updates-ig-box-text {
+    flex: 1 1 100%;
+    max-width: 560px;
+    text-align: center;
+}
+
+.updates-ig-box--text-only .updates-ig-box-text p {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--color-text);
+}
+
+.updates-ig-box--text-only .updates-ig-box-text p + p {
+    margin-top: var(--spacing-md);
+}
+
+/* Boring updates: Instagram-post screen */
+.updates-ig-box--boring {
+    max-width: 1080px;
+    padding: var(--spacing-xxxl) var(--spacing-xxl);
+    display: flex;
+    flex-direction: column;
+}
+
+.updates-ig-box--boring .updates-ig-box-inner {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    flex: 1;
+    justify-content: center;
+}
+
+.updates-ig-boring-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 0;
+    order: -1;
+    text-align: center;
+}
+
+.updates-ig-box--boring .updates-ig-box-inner {
+    align-items: center;
+}
+
+.updates-ig-box--boring .updates-ig-box-text,
+.updates-ig-box--boring .updates-ig-box-text p {
+    text-align: center;
+}
+
+.updates-ig-box--boring .updates-ig-box-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--color-text);
+    -webkit-text-fill-color: unset;
+    background: none;
+    text-align: center;
+}
+
+/* Legacy feature rows (kept for reference, unused) */
+.updates-ig-feature {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xxl);
+    width: 100%;
+    margin-top: var(--spacing-xxl);
+    position: relative;
+}
+
+.updates-ig-feature:first-of-type {
+    margin-top: var(--spacing-xl);
+}
+
+.updates-ig-feature--img-left .updates-ig-feature-img { order: 1; }
+.updates-ig-feature--img-left .updates-ig-feature-text { order: 2; }
+.updates-ig-feature--img-right .updates-ig-feature-text { order: 1; }
+.updates-ig-feature--img-right .updates-ig-feature-img { order: 2; }
+
+.updates-ig-feature-img {
+    flex: 0 1 280px;
+    max-width: 100%;
+    position: relative;
+}
+
+.updates-ig-feature-img img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    box-shadow:
+        0 8px 24px rgba(44, 36, 22, 0.12),
+        0 24px 56px rgba(139, 90, 60, 0.18);
+}
+
+.updates-ig-feature-text {
+    flex: 1 1 280px;
+    min-width: 0;
+    position: relative;
+}
+
+.updates-ig-feature-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 0 0 var(--spacing-sm);
+    letter-spacing: -0.02em;
+}
+
+.updates-ig-feature-text p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.updates-ig-feature-text a {
+    color: var(--color-accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.updates-ig-feature-text a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.updates-ig-feature--text-only {
+    margin-top: var(--spacing-xxl);
+    justify-content: center;
+}
+
+.updates-ig-feature--text-only .updates-ig-feature-text {
+    flex: 1 1 100%;
+    max-width: 560px;
+    text-align: center;
+}
+
+/* IG post 2: Release notes block (screenshot for Instagram) */
+.updates-ig-notes {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: var(--spacing-xl) 0;
+}
+
 .updates-list {
-    max-width: 720px;
+    max-width: 680px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -1408,33 +1990,31 @@ body {
 
 .update-card {
     background: var(--color-card);
-    padding: var(--spacing-xxl);
-    border-radius: var(--border-radius-lg);
-    border: 2px solid var(--color-border-light);
+    padding: var(--spacing-xxl) var(--spacing-xl);
+    border-radius: var(--border-radius-xl);
+    border: 1px solid var(--color-border-light);
     border-left: 4px solid var(--color-primary);
     box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-}
-
-.update-card:hover {
-    border-color: var(--color-accent);
-    border-left-color: var(--color-primary);
-    box-shadow: var(--shadow-md);
 }
 
 .update-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
     margin-bottom: var(--spacing-lg);
 }
 
 .update-version {
     display: inline-block;
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--color-primary);
+    padding: 0.35em 0.85em;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
     font-weight: 700;
     font-size: 0.9375rem;
     border-radius: var(--border-radius-sm);
     letter-spacing: 0.02em;
+    box-shadow: 0 2px 4px rgba(139, 90, 60, 0.2);
 }
 
 .update-changes {
@@ -1445,10 +2025,10 @@ body {
 
 .update-changes li {
     position: relative;
-    padding-left: var(--spacing-xl);
-    margin-bottom: var(--spacing-md);
+    padding-left: 1.5rem;
+    margin-bottom: 0.95rem;
     color: var(--color-text-secondary);
-    line-height: 1.8;
+    line-height: 1.75;
     font-size: 1rem;
 }
 
@@ -1460,16 +2040,87 @@ body {
     content: '';
     position: absolute;
     left: 0;
-    top: 0.5em;
+    top: 0.55em;
     width: 6px;
     height: 6px;
     background: var(--color-accent);
     border-radius: 50%;
+    opacity: 0.9;
 }
 
 .update-changes li strong {
     color: var(--color-primary);
     font-weight: 600;
+}
+
+.update-card-latest {
+    border-left-width: 5px;
+    border-left-color: var(--color-accent);
+    box-shadow: 0 4px 20px rgba(44, 36, 22, 0.08), 0 0 0 1px rgba(212, 165, 116, 0.15);
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--color-background-alt) 100%);
+}
+
+.update-badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary-light) 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(139, 90, 60, 0.25);
+}
+
+.update-credit {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px dashed var(--color-border);
+}
+
+.update-credit strong {
+    color: var(--color-text);
+}
+
+.update-credit a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.update-credit a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.update-screenshots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+.update-screenshot {
+    margin: 0;
+    text-align: center;
+}
+
+.update-screenshot img {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--color-border-light);
+    box-shadow: var(--shadow-md);
+    display: block;
+    margin: 0 auto var(--spacing-sm);
+}
+
+.update-screenshot figcaption {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
 }
 
 /* Feedback Section */
@@ -1928,13 +2579,28 @@ body {
         gap: var(--spacing-lg);
     }
     
-.download-card {
+.download-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .download-card {
         margin: 0 var(--spacing-md);
+        width: 100%;
+        max-width: 100%;
     }
 
     .download-card-inner {
         padding: var(--spacing-xl) var(--spacing-lg);
         padding-top: calc(var(--spacing-xl) + 12px);
+        text-align: center;
+        align-items: center;
+    }
+
+    .download-headline {
+        text-align: center;
+        width: 100%;
     }
 
     .download-logo {
@@ -2714,6 +3380,45 @@ body {
     
     .update-card {
         padding: var(--spacing-xl);
+    }
+
+    .updates-ig-visual {
+        padding: var(--spacing-xl);
+    }
+
+    .updates-ig-box-inner {
+        flex-direction: column;
+    }
+
+    .updates-ig-box--img-right .updates-ig-box-text { order: 1; }
+    .updates-ig-box--img-right .updates-ig-box-img { order: 2; }
+
+    .updates-ig-box-img {
+        flex-basis: auto;
+        max-width: 240px;
+    }
+
+    .updates-ig-phone img {
+        max-width: 100%;
+    }
+
+    .updates-ig-content {
+        flex-direction: column;
+    }
+
+    .updates-ig-text {
+        text-align: center;
+    }
+
+    .updates-ig-text .updates-ig-eyebrow,
+    .updates-ig-text .updates-ig-visual-title,
+    .updates-ig-text .updates-ig-tagline {
+        text-align: center;
+    }
+
+    .updates-ig-text .updates-ig-tagline::after {
+        margin-left: auto;
+        margin-right: auto;
     }
     
     .download-btn-appstore {
