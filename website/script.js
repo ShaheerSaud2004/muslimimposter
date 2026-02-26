@@ -360,3 +360,47 @@ if (feedbackForm) {
         }
     });
 }
+
+// Updates carousel (Instagram-style click-through)
+(function () {
+    const carousel = document.getElementById('updates-carousel');
+    if (!carousel) return;
+
+    const track = carousel.querySelector('.updates-carousel-track');
+    const slides = carousel.querySelectorAll('.updates-carousel-slide');
+    const prevBtn = carousel.querySelector('.updates-carousel-prev');
+    const nextBtn = carousel.querySelector('.updates-carousel-next');
+    const dots = carousel.querySelectorAll('.updates-carousel-dot');
+    const total = slides.length;
+
+    let index = 0;
+
+    function goTo(i) {
+        index = Math.max(0, Math.min(i, total - 1));
+        const offset = -index * 100;
+        track.style.transform = 'translateX(' + offset + '%)';
+        dots.forEach(function (dot, d) {
+            dot.classList.toggle('active', d === index);
+            dot.setAttribute('aria-selected', d === index ? 'true' : 'false');
+        });
+        prevBtn.setAttribute('aria-disabled', index === 0 ? 'true' : 'false');
+        nextBtn.setAttribute('aria-disabled', index === total - 1 ? 'true' : 'false');
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function () { goTo(index - 1); });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function () { goTo(index + 1); });
+    }
+    dots.forEach(function (dot, i) {
+        dot.addEventListener('click', function () { goTo(i); });
+    });
+
+    carousel.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(index - 1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); goTo(index + 1); }
+    });
+
+    goTo(0);
+})();

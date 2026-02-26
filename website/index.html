@@ -341,18 +341,84 @@
                 <h2 class="section-title">Updates</h2>
                 <p class="section-subtitle">What's new in Khafī</p>
             </div>
-            <div class="updates-list">
-                <article class="update-card">
-                    <header class="update-header">
-                        <span class="update-version">v1.1.0</span>
-                    </header>
-                    <ul class="update-changes">
-                        <li><strong>Discussion timer</strong> — After round instructions, tap "Proceed to Timer" for a countdown based on group size. Use "+30 sec" for extra time, then "Reveal When Ready."</li>
-                        <li><strong>Play Again</strong> — New round gets a new imposter, new category, and new word (no repeats).</li>
-                        <li><strong>How to Play</strong> — Updated with timer steps.</li>
-                    </ul>
-                </article>
+
+            <!-- Instagram-style carousel: click through the update "posts" -->
+            <div class="updates-carousel" id="updates-carousel" tabindex="0" aria-label="What's new — use arrows or dots to view">
+                <div class="updates-carousel-viewport">
+                    <div class="updates-carousel-track">
+                        <div class="updates-carousel-slide" data-slide="0">
+            <div class="updates-ig-visual" aria-label="What's new in Khafī">
+                <div class="updates-ig-content">
+                    <div class="updates-ig-text">
+                        <p class="updates-ig-eyebrow">Khafī v1.1.5</p>
+                        <h3 class="updates-ig-visual-title">New Update</h3>
+                        <p class="updates-ig-tagline">What's new inside</p>
+                    </div>
+                    <div class="updates-ig-phones">
+                        <figure class="updates-ig-phone">
+                            <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.08-1284x2778-frame.png" alt="Collections — Ramadan, Most popular" />
+                        </figure>
+                        <figure class="updates-ig-phone">
+                            <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.36-1284x2778-frame.png" alt="Settings — Create Custom Category, Learn &amp; Share" />
+                        </figure>
+                    </div>
+                </div>
             </div>
+                        </div>
+                        <div class="updates-carousel-slide" data-slide="1">
+            <div class="updates-ig-box">
+                <div class="updates-ig-box-inner updates-ig-box--img-left">
+                    <div class="updates-ig-box-img">
+                        <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.08-1284x2778-frame.png" alt="Collections screen" />
+                    </div>
+                    <div class="updates-ig-box-text">
+                        <h4 class="updates-ig-box-title">Collections</h4>
+                        <p>We added Collections! They are preset groups of categories so you can start a game faster. Pick “Ramadan” or “Most popular” in one tap instead of choosing categories one by one.</p>
+                    </div>
+                </div>
+            </div>
+                        </div>
+                        <div class="updates-carousel-slide" data-slide="2">
+            <div class="updates-ig-box">
+                <div class="updates-ig-box-inner updates-ig-box--img-right">
+                    <div class="updates-ig-box-text">
+                        <h4 class="updates-ig-box-title">Learn &amp; Share</h4>
+                        <p>After each round, a “Learn about [word]” section explains the secret word. Tap “Watch video” to dig deeper or share from the header. Especially helpful for Seerah and Islamic-related topics—learn more about them as you play.</p>
+                    </div>
+                    <div class="updates-ig-box-img">
+                        <img src="assets/app-previews-with-frame/Simulator%20Screenshot%20-%20iPhone%2017%20Pro%20-%202026-02-26%20at%2010.00.36-1284x2778-frame.png" alt="Settings and Learn screen" />
+                    </div>
+                </div>
+            </div>
+                        </div>
+                        <div class="updates-carousel-slide" data-slide="3">
+            <div class="updates-ig-box updates-ig-box--boring" aria-label="And other boring updates">
+                <div class="updates-ig-box-inner updates-ig-box--text-only">
+                    <p class="updates-ig-boring-label">v1.1.5</p>
+                    <div class="updates-ig-box-text">
+                        <h4 class="updates-ig-box-title">And other boring updates</h4>
+                        <p>Play Again now uses a smoother flow: the screen slides to the next round before content updates, so there’s no brief flash of the next game. New Game and Play Again buttons have been moved higher on the results screen for easier access.</p>
+                        <p>This release also includes general polish and small bug fixes. Back button concept credit: <a href="https://www.instagram.com/z1a.khan/" target="_blank" rel="noopener noreferrer">@z1a.khan</a>.</p>
+                    </div>
+                </div>
+            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="updates-carousel-btn updates-carousel-prev" aria-label="Previous slide" title="Previous">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button type="button" class="updates-carousel-btn updates-carousel-next" aria-label="Next slide" title="Next">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div class="updates-carousel-dots" role="tablist" aria-label="Slide navigation">
+                    <button type="button" class="updates-carousel-dot active" aria-label="Slide 1" data-index="0" role="tab"></button>
+                    <button type="button" class="updates-carousel-dot" aria-label="Slide 2" data-index="1" role="tab"></button>
+                    <button type="button" class="updates-carousel-dot" aria-label="Slide 3" data-index="2" role="tab"></button>
+                    <button type="button" class="updates-carousel-dot" aria-label="Slide 4" data-index="3" role="tab"></button>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -416,7 +482,7 @@
 
     <!-- Download Section - Instagram-ready CTA -->
     <section id="download" class="download">
-        <div class="container">
+        <div class="container download-container">
             <div class="download-card">
                 <div class="download-card-accent"></div>
                 <div class="download-card-inner">
