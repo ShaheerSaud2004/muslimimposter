@@ -625,3 +625,19 @@ const learnMoreMap: Record<string, LearnMoreItem> = {
 export function getLearnMore(secretWord: string): LearnMoreItem | null {
   return learnMoreMap[secretWord] ?? null;
 }
+
+/**
+ * Get Learn More content for any word. Returns curated content when available,
+ * otherwise a fallback with short description and YouTube search link.
+ */
+export function getLearnMoreOrFallback(secretWord: string, categoryName?: string): LearnMoreItem {
+  const curated = learnMoreMap[secretWord];
+  if (curated) return curated;
+  const query = encodeURIComponent(`${secretWord} Islam`);
+  return {
+    synopsis: categoryName
+      ? `Learn more about "${secretWord}" in ${categoryName}.`
+      : `Learn more about "${secretWord}".`,
+    youtubeUrl: `https://www.youtube.com/results?search_query=${query}`,
+  };
+}

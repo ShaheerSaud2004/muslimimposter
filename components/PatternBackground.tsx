@@ -65,7 +65,7 @@ export const PatternBackground: React.FC = () => {
     );
   }
 
-  // Dark theme - minimal pattern
+  // Dark / Ramadan - minimal pattern
   return null;
 };
 

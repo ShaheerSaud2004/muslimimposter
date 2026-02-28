@@ -9,6 +9,7 @@ import Animated, {
   Extrapolate,
 } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
+import { getResponsiveFontSize } from '../utils/responsive';
 import { typography, spacing } from '../theme';
 import { NameLogo } from './NameLogo';
 
@@ -100,10 +101,11 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
   });
 
   const getCardBackPattern = () => {
-    const patternColor = theme === 'dark' ? colors.accent : colors.text;
+    const isDarkLike = theme === 'dark' || theme === 'ramadan';
+    const patternColor = isDarkLike ? colors.accent : colors.text;
     const patternOpacity = theme === 'soft' ? 0.08 : theme === 'paper' ? 0.12 : 0.15;
-    const circleOpacity = theme === 'dark' ? 0.25 : 0.20;
-    const textOpacity = theme === 'dark' ? 0.35 : 0.30;
+    const circleOpacity = isDarkLike ? 0.25 : 0.20;
+    const textOpacity = isDarkLike ? 0.35 : 0.30;
     
     return (
       <View style={styles.patternContainer}>
@@ -193,14 +195,14 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
         {getCardBackPattern()}
           {playerName && (
             <View style={styles.backNameContainer}>
-              <Text style={[styles.backNameText, { color: colors.text }]}>
+              <Text style={[styles.backNameText, { color: colors.text, fontSize: getResponsiveFontSize(20, 18) }]}>
                 {playerName}
               </Text>
             </View>
           )}
           <View style={styles.backLabelContainer}>
             <View style={[styles.backLabelBox, { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
-              <Text style={[styles.backLabel, { color: colors.accent }]}>
+              <Text style={[styles.backLabel, { color: colors.accent, fontSize: getResponsiveFontSize(12, 11) }]}>
                 Tap to reveal
               </Text>
             </View>
@@ -238,9 +240,10 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    aspectRatio: 0.65, // Playing card ratio
+    aspectRatio: 0.6,
     maxWidth: 350,
-    maxHeight: 540,
+    maxHeight: 620,
+    minHeight: 420,
     // Perspective for 3D effect
     transform: [{ perspective: 1000 }],
   },
@@ -259,9 +262,7 @@ const styles = StyleSheet.create({
     elevation: 15,
     overflow: 'hidden',
   },
-  cardFront: {
-    backgroundColor: '#FFFFFF',
-  },
+  cardFront: {},
   cardBack: {
     transform: [{ rotateY: '180deg' }],
   },
@@ -501,6 +502,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
+    overflow: 'visible',
   },
   revealedBorderLine: {
     position: 'absolute',
@@ -539,7 +541,6 @@ const styles = StyleSheet.create({
   },
   backNameText: {
     ...typography.heading,
-    fontSize: 20,
     fontWeight: '700',
     letterSpacing: 0.5,
     fontFamily: 'Etna Sans Serif',
@@ -560,7 +561,6 @@ const styles = StyleSheet.create({
   },
   backLabel: {
     ...typography.caption,
-    fontSize: 12,
     letterSpacing: 0.8,
     fontWeight: '600',
     textTransform: 'uppercase',

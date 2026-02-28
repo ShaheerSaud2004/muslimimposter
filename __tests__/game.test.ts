@@ -7,11 +7,13 @@ import {
   selectDifferentCategory,
   selectRandomCategory,
   selectSingleRandomCategory,
+  RANDOM_PLAY_EXCLUDED_CATEGORY_IDS,
   selectRandomWord,
   getCategoryName,
   getVotingTimeSeconds,
   generatePlayerNames,
 } from '../utils/game';
+import { defaultCategories } from '../data/categories';
 
 // Minimal Category shape for tests (matches types/index Category)
 const mockCategories = [
@@ -271,6 +273,37 @@ describe('selectSingleRandomCategory', () => {
       const result = selectSingleRandomCategory(withLocked);
       expect(result).toBe('unlocked');
     }
+  });
+
+  it('never returns MSA when playing without choosing categories (excludeCategoryIds)', () => {
+    const withMsa = [
+      ...mockCategories,
+      { id: 'msa', name: 'MSA', description: '', words: ['Halaqa', 'Jummah'], locked: false, isCustom: false },
+    ];
+    const RUNS = 100;
+
+    for (let i = 0; i < RUNS; i++) {
+      const result = selectSingleRandomCategory(withMsa, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS);
+      expect(result).not.toBe('msa');
+      expect(['prophets', 'seerah', 'ramadan', 'quran-surahs']).toContain(result);
+    }
+  });
+
+  it('100 runs without category selection: MSA never chosen, log count per category', () => {
+    const RUNS = 100;
+    const counts: Record<string, number> = {};
+
+    for (let i = 0; i < RUNS; i++) {
+      const id = selectSingleRandomCategory(defaultCategories, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS);
+      if (!id) continue;
+      counts[id] = (counts[id] || 0) + 1;
+    }
+
+    expect(counts['msa'] ?? 0).toBe(0);
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    console.log('Category counts over 100 runs (random play, no selection):');
+    sorted.forEach(([id, n]) => console.log(`  ${id}: ${n}`));
   });
 });
 

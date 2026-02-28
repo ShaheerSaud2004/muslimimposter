@@ -43,11 +43,25 @@ export type Category = {
   difficulty?: Difficulty;
 };
 
+/** User-created playlist: name + list of category IDs */
+export type CustomPlaylist = {
+  id: string;
+  name: string;
+  categoryIds: string[];
+};
+
 export type Locale = 'en' | 'ar' | 'ur';
 
+export type DiscussionTimePreset = 'short' | 'medium' | 'long';
+
 export type AppSettings = {
-  theme: 'soft' | 'paper' | 'dark';
+  theme: 'soft' | 'paper' | 'dark' | 'ramadan';
   locale: Locale;
   unlockedCategories: string[];
   customCategories: Category[];
+  debugMode?: boolean;
+  hapticsEnabled?: boolean;
+  soundEnabled?: boolean;
+  /** Default discussion (voting) timer: short 1 min, medium 2 min, long 3 min. Omit = use dynamic (base + per player). */
+  discussionTimePreset?: DiscussionTimePreset;
 };

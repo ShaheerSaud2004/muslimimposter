@@ -82,7 +82,6 @@ export const arabicTranslations: Record<string, string> = {
   'Call to Islam (Dawah)': 'Early call to Islam in Makkah',
   'Boycott of Banu Hashim': 'Quraysh boycott of Prophet\'s clan',
   'Taif': 'Journey to Taif – rejected then later embraced',
-  'Treaty with Jews of Madinah': 'Constitution of Madinah',
   'Battle of Hunayn': 'After Conquest of Makkah – vs Hawazin',
   'Battle of Tabuk': 'Last major expedition – vs Byzantines',
   'Birth in Makkah': 'Birth in Mecca',

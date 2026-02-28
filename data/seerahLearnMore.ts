@@ -77,10 +77,6 @@ export const seerahLearnMore: Record<string, SeerahLearnMore> = {
     synopsis: 'After the Year of Sorrow, the Prophet ﷺ traveled to Taif to invite its people to Islam. He was rejected and stoned. He prayed to Allah, and later the people of Taif embraced Islam.',
     youtubeUrl: 'https://www.youtube.com/results?search_query=Prophet+Muhammad+Taif+Seerah',
   },
-  'Treaty with Jews of Madinah': {
-    synopsis: 'The Constitution of Madinah—agreements between the Muslims, Ansar, Muhajirun, and the Jewish tribes of Madinah. It established rights, duties, and a framework for coexistence in the first Islamic state.',
-    youtubeUrl: 'https://www.youtube.com/results?search_query=Constitution+of+Madinah+Jewish+tribes+Seerah',
-  },
   'Battle of Hunayn': {
     synopsis: 'After the Conquest of Makkah (630 CE), the tribes of Hawazin and Thaqif attacked the Muslims. The battle at Hunayn started with a retreat but ended in a decisive victory for the Muslims.',
     youtubeUrl: 'https://www.youtube.com/results?search_query=Battle+of+Hunayn+Seerah',

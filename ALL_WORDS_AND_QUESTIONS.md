@@ -47,7 +47,6 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Call to Islam (Dawah)
 - Boycott of Banu Hashim
 - Taif
-- Treaty with Jews of Madinah
 - Battle of Hunayn
 - Battle of Tabuk
 

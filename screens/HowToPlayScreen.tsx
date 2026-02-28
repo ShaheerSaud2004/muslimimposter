@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 import { RootStackParamList } from '../App';
 import { Button } from '../components/Button';
 import { useTheme } from '../contexts/ThemeContext';
@@ -19,102 +20,122 @@ type HowToPlayScreenNavigationProp = StackNavigationProp<
 
 const STEPS = [
   {
-    icon: '🎯',
     title: 'Setup Your Game',
-    description: 'Configure your game settings before you start',
+    description: 'Players, categories, and options',
     lines: [
       {
-        text: 'Choose 3–20 players and set how many imposters you want (recommended: 1 imposter per 3 players).',
-        example: 'Example: 6 players = 2 imposters',
+        text: 'Choose 3–20 players and how many imposters (about 1 per 3 players works best).',
+        example: 'e.g. 6 players → 2 imposters',
       },
       {
-        text: 'Select one or more word categories. Leave empty to use all categories randomly.',
-        example: 'Categories: Prophets, Seerah, Ramadan, etc.',
+        text: 'Pick categories or leave empty to use all. Tap "See More" to browse and read descriptions.',
+        example: 'Prophets, Seerah, Ramadan, Worship, and more.',
       },
       {
-        text: 'Optional: Enable special modes for extra challenge.',
-        example: 'Blind Imposter: Imposter doesn\'t see the category. Double Agent: One player knows the word but isn\'t the imposter.',
+        text: 'Optional: Blind Imposter (imposter doesn’t see the category), Double Agent (one player knows the word but isn’t the imposter).',
+        example: null,
       },
       {
-        text: 'Tap "Start Game" when ready!',
+        text: 'Tap "Start Game" when you’re ready.',
         example: null,
       },
     ],
   },
   {
-    icon: '📱',
     title: 'Reveal Your Cards',
-    description: 'Each player secretly sees their role',
+    description: 'Pass the phone; everyone sees their role in secret',
     lines: [
       {
-        text: 'The app will show you who goes first. Pass the phone to that player.',
+        text: 'The app shows who goes first. Pass the phone to that player.',
         example: null,
       },
       {
-        text: 'Each player taps their name on the screen to reveal their card. Only they should look!',
-        example: 'Keep the phone private - don\'t let others see your card.',
+        text: 'Each player taps their name to reveal their card. Only they look—keep the screen private.',
+        example: null,
       },
       {
-        text: 'Normal players see the secret word and category. Imposters see "IMPOSTER" instead.',
-        example: 'If Blind Imposter is on, imposters see nothing about the word.',
+        text: 'Normal players see the secret word (and category). Imposters see "IMPOSTER" (or nothing if Blind Imposter is on).',
+        example: null,
       },
       {
-        text: 'After everyone has seen their card, tap "Continue to Round".',
+        text: 'When everyone has seen their card, tap "Continue to Round".',
         example: null,
       },
     ],
   },
   {
-    icon: '💬',
     title: 'Play the Round',
-    description: 'Give clues and find the imposter',
+    description: 'Give clues, discuss, vote, then reveal',
     lines: [
       {
-        text: 'Word + Clue Mode: Each player gives ONE clue word related to the secret word.',
-        example: 'Secret word: "Masjid". Clues: "Prayer", "Dome", "Friday", "Community".',
+        text: 'Word mode: Each player gives one clue related to the secret word. Quiz mode: Answer a question, then give clues.',
+        example: 'Word "Masjid" → clues like "Prayer", "Dome", "Friday".',
       },
       {
-        text: 'Quiz Mode: Players are given a question. The answer becomes the secret word, then players give clues.',
-        example: 'Question: "First wife of the Prophet ﷺ". Answer: "Khadija". Clues: "Businesswoman", "First believer", etc.',
+        text: 'Discuss as a group who you think is the imposter. Vote in person (raise hands or agree together).',
+        example: null,
       },
       {
-        text: 'After all clues or questions, discuss as a group who you think is the imposter.',
-        example: 'Look for players who seem confused, give vague clues, or act suspicious.',
+        text: 'Tap "Proceed to Timer" to start the discussion timer (time scales with group size; use "+30 sec" if needed).',
+        example: null,
       },
       {
-        text: 'Vote in person (not in the app) for who you think is the imposter.',
-        example: 'Raise hands, point, or discuss until you agree on who to vote out.',
-      },
-      {
-        text: 'Tap "Proceed to Timer" to start the discussion timer. The time is based on your group size.',
-        example: 'More players = more time. Tap "+30 sec" if you need extra time to discuss.',
-      },
-      {
-        text: 'When you\'re ready to reveal, tap "Reveal When Ready" to see the results.',
+        text: 'When you’re ready, tap "Reveal When Ready" to see the results.',
         example: null,
       },
     ],
   },
   {
-    icon: '✨',
     title: 'Reveal the Results',
-    description: 'See who won and play again',
+    description: 'See the word and imposters, then play again',
     lines: [
       {
         text: 'Tap "Reveal Results" to see the secret word and who the imposters were.',
         example: null,
       },
       {
-        text: 'If you voted out an imposter, the normal players win! If not, the imposters win.',
+        text: 'Voted out an imposter? Normal players win. Otherwise, imposters win.',
         example: null,
       },
       {
-        text: 'Tap "Play Again" for a new round (new word, new imposter, new category). Tap "New Game" to change players or settings.',
+        text: '"Play Again" = new round (new word, new imposter). "New Game" = change players or settings.',
         example: null,
       },
     ],
   },
 ];
+
+function StepIcon({ stepIndex, fill }: { stepIndex: number; fill: string }) {
+  const size = 28;
+  const vb = '0 0 24 24';
+  const vb960 = '0 -960 960 960';
+  if (stepIndex === 0) {
+    return (
+      <Svg width={size} height={size} viewBox={vb} fill={fill}>
+        <Path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+      </Svg>
+    );
+  }
+  if (stepIndex === 1) {
+    return (
+      <Svg width={size} height={size} viewBox={vb960} fill={fill}>
+        <Path d="M320-120q-33 0-56.5-23.5T240-200v-560q0-33 23.5-56.5T320-840h320q33 0 56.5 23.5T720-760v560q0 33-23.5 56.5T640-120H320Zm320-80v-560H320v560h320ZM508.5-651.5Q520-663 520-680t-11.5-28.5Q497-720 480-720t-28.5 11.5Q440-697 440-680t11.5 28.5Q463-640 480-640t28.5-11.5ZM0-360v-240h80v240H0Zm120 80v-400h80v400h-80Zm760-80v-240h80v240h-80Zm-120 80v-400h80v400h-80Zm-440 80v-560 560Z" />
+      </Svg>
+    );
+  }
+  if (stepIndex === 2) {
+    return (
+      <Svg width={size} height={size} viewBox={vb} fill={fill}>
+        <Path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg width={size} height={size} viewBox={vb} fill={fill}>
+      <Path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C18.08 14.63 20 12.55 20 10V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+    </Svg>
+  );
+}
 
 export default function HowToPlayScreen() {
   const navigation = useNavigation<HowToPlayScreenNavigationProp>();
@@ -154,7 +175,7 @@ export default function HowToPlayScreen() {
                   خفي — the hidden word game
                 </Text>
                 <Text style={[styles.introText, { color: colors.textSecondary }]}>
-                  Learn how to play Khafī in 4 simple steps. Perfect for family gatherings, Islamic events, and fun with friends!
+                  Four simple steps to get started. Great for family, Islamic events, and game night.
                 </Text>
               </View>
             </View>
@@ -168,7 +189,7 @@ export default function HowToPlayScreen() {
             >
               <View style={[styles.stepHeader, { borderBottomColor: colors.border }]}>
                 <View style={[styles.stepIconWrap, { backgroundColor: colors.accentLight }]}>
-                  <Text style={styles.stepIcon}>{step.icon}</Text>
+                  <StepIcon stepIndex={i} fill={colors.accent} />
                 </View>
                 <View style={styles.stepTitleContainer}>
                   <View style={[styles.stepNumberBadge, { borderColor: colors.accent }]}>
@@ -292,9 +313,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 44,
     minHeight: 44,
-  },
-  stepIcon: {
-    fontSize: 28,
   },
   stepTitleContainer: {
     flex: 1,

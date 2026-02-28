@@ -1,4 +1,4 @@
-export type Theme = 'soft' | 'paper' | 'dark';
+export type Theme = 'soft' | 'paper' | 'dark' | 'ramadan';
 
 export type ThemeColors = {
   background: string;
@@ -53,6 +53,19 @@ export const themes: Record<Theme, ThemeColors> = {
     imposter: '#E67E5C',
     doubleAgent: '#8DB97F',
     patternOpacity: 0.08,
+  },
+  ramadan: {
+    background: '#1a1f3a',
+    cardBackground: '#252b47',
+    text: '#F5E6D3',
+    textSecondary: '#9ca3b8',
+    accent: '#E8B86D',
+    accentLight: '#3d3526',
+    border: '#3d4a5c',
+    shadow: 'rgba(0, 0, 0, 0.45)',
+    imposter: '#E67E5C',
+    doubleAgent: '#8DB97F',
+    patternOpacity: 0.06,
   },
 };
 

@@ -19,7 +19,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const loadTheme = async () => {
     const settings = await getSettings();
-    setThemeState(settings.theme);
+    const validThemes: Theme[] = ['soft', 'paper', 'dark', 'ramadan'];
+    const themeToUse = settings.theme && validThemes.includes(settings.theme) ? settings.theme : 'dark';
+    setThemeState(themeToUse);
   };
 
   const setTheme = async (newTheme: Theme) => {

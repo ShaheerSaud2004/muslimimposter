@@ -12,6 +12,9 @@ import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
+import { getSettings } from '../utils/storage';
+import { getVotingTimeSeconds } from '../utils/game';
+import { DISCUSSION_TIME_PRESET_SECONDS } from '../constants';
 
 type QuizAnswersReviewScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -23,9 +26,14 @@ export default function QuizAnswersReviewScreen() {
   const { colors } = useTheme();
   const { players, settings } = useGame();
 
-  const handleProceedToTimer = () => {
+  const handleProceedToTimer = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    navigation.navigate('VotingTimer');
+    const s = await getSettings();
+    const initialSeconds =
+      s.discussionTimePreset != null
+        ? DISCUSSION_TIME_PRESET_SECONDS[s.discussionTimePreset]
+        : getVotingTimeSeconds(players.length);
+    navigation.navigate('VotingTimer', { initialSeconds });
   };
 
   if (!settings || players.length === 0) {
@@ -87,10 +95,14 @@ export default function QuizAnswersReviewScreen() {
                     },
                   ]}>
                     <View style={styles.playerHeader}>
-                      <Text style={[
-                        styles.playerName,
-                        { color: isImposter ? colors.imposter : colors.accent },
-                      ]}>
+                      <Text
+                        style={[
+                          styles.playerName,
+                          { color: isImposter ? colors.imposter : colors.accent },
+                        ]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
                         {player.name}
                       </Text>
                       {isImposter && (

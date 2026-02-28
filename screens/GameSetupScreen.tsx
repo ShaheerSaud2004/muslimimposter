@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../components/Alert';
 import Svg, { Path } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -26,23 +26,27 @@ import { RootStackParamList } from '../App';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
+import { GAME_SETUP } from '../constants';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { defaultCategories, getCategoryById, getAllWords } from '../data/categories';
+import { playlists } from '../data/playlists';
 import {
   createPlayers,
   selectRandomWord,
   selectRandomCategory,
   selectSingleRandomCategory,
+  RANDOM_PLAY_EXCLUDED_CATEGORY_IDS,
   getCategoryName,
   selectQuizQuestion,
   selectImposterQuizQuestion,
 } from '../utils/game';
-import { getSettings, getCustomCategories, getUsedWords, addUsedWord, getSessionUsedQuestionIds, addSessionUsedQuestionId, getSessionUsedWords, addSessionUsedWord } from '../utils/storage';
+import { getSettings, getCustomCategories, getCustomPlaylists, deleteCustomPlaylist, getUsedWords, addUsedWord, getSessionUsedQuestionIds, addSessionUsedQuestionId, getSessionUsedWords, addSessionUsedWord } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { GameSettings, GameMode, Category, Difficulty } from '../types';
+import { GameSettings, GameMode, Category, CustomPlaylist, Difficulty } from '../types';
 import { getMaxContentWidth, getResponsivePadding } from '../utils/responsive';
 
 type GameSetupScreenNavigationProp = StackNavigationProp<
@@ -53,6 +57,7 @@ type GameSetupScreenNavigationProp = StackNavigationProp<
 export default function GameSetupScreen() {
   const navigation = useNavigation<GameSetupScreenNavigationProp>();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const { players, settings, setPlayers, setSettings } = useGame();
   const maxWidth = getMaxContentWidth();
@@ -67,6 +72,7 @@ export default function GameSetupScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showHintToImposter, setShowHintToImposter] = useState(false);
   const [customCategories, setCustomCategories] = useState<Category[]>([]);
+  const [customPlaylists, setCustomPlaylists] = useState<CustomPlaylist[]>([]);
   const [modalCategory, setModalCategory] = useState<Category | null>(null);
   const [infoModal, setInfoModal] = useState<'blind' | 'double' | 'word' | 'quiz' | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -75,6 +81,7 @@ export default function GameSetupScreen() {
   const [showNameInputModal, setShowNameInputModal] = useState(false);
   const [nameInputModalIndex, setNameInputModalIndex] = useState<number | null>(null);
   const [tempNameInput, setTempNameInput] = useState('');
+  const allCategoriesScrollRef = useRef<ScrollView>(null);
 
   // Pre-fill form from existing game when coming from "New Game" (so player count etc. are preserved)
   useEffect(() => {
@@ -101,15 +108,16 @@ export default function GameSetupScreen() {
   }, [numPlayers, players.length, settings]);
 
   useEffect(() => {
-    // Load data asynchronously to prevent blocking render
-    const loadData = async () => {
-      await Promise.all([
-        loadCustomCategories(),
-      ]);
-    };
-    loadData();
     loadSavedPlayerNames();
   }, []);
+
+  // Reload custom categories and playlists when screen is focused (e.g. after creating)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadCustomCategories();
+      getCustomPlaylists().then(setCustomPlaylists);
+    }, [])
+  );
 
   const loadSavedPlayerNames = async () => {
     try {
@@ -188,18 +196,37 @@ export default function GameSetupScreen() {
   let sortedCategories = [...defaultCategories];
 
   const availableCategories = [...sortedCategories, ...customCategories];
-  
+
   const MAX_VISIBLE_CATEGORIES = 6;
-  const visibleCategories = availableCategories.slice(0, MAX_VISIBLE_CATEGORIES);
-  const hasMoreCategories = availableCategories.length > MAX_VISIBLE_CATEGORIES;
+  // When a collection is selected, show selected categories first so they fit in the visible grid
+  const orderedForDisplay = selectedCategories.length > 0
+    ? [
+        ...selectedCategories
+          .map(id => availableCategories.find(c => c.id === id))
+          .filter((c): c is Category => !!c),
+        ...availableCategories.filter(c => !selectedCategories.includes(c.id)),
+      ]
+    : availableCategories;
+  const visibleCategories = orderedForDisplay.slice(0, MAX_VISIBLE_CATEGORIES);
+  const hasMoreCategories = orderedForDisplay.length > MAX_VISIBLE_CATEGORIES;
 
   const toggleCategory = async (categoryId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Only one category can be selected at a time
     setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
+      prev.includes(categoryId) ? [] : [categoryId]
     );
+  };
+
+  const applyPlaylist = (categoryIds: string[]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const validIds = categoryIds.filter(id => availableCategories.some(c => c.id === id));
+    setSelectedCategories(validIds);
+  };
+
+  const clearPlaylist = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCategories([]);
   };
 
   const adjustNumber = (type: 'players' | 'imposters', delta: number) => {
@@ -224,8 +251,8 @@ export default function GameSetupScreen() {
     let secretCategoryId: string;
 
     if (selectedCategories.length === 0) {
-      // Randomly select a single category from all
-      secretCategoryId = selectSingleRandomCategory(availableCategories);
+      // Randomly select a single category, excluding ones that are only for explicit selection (e.g. MSA)
+      secretCategoryId = selectSingleRandomCategory(availableCategories, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS);
       if (!secretCategoryId) {
         showAlert({ title: 'Error', message: 'No categories available. Please unlock a category.' });
         return;
@@ -503,8 +530,11 @@ export default function GameSetupScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Player Names
               </Text>
-              <Text style={[styles.categoryHint, { color: colors.textSecondary, marginBottom: spacing.md }]}>
+              <Text style={[styles.categoryHint, { color: colors.textSecondary, marginBottom: spacing.xs }]}>
                 Enter names for each player (optional)
+              </Text>
+              <Text style={[styles.categoryHint, { color: colors.textSecondary, marginBottom: spacing.md, fontSize: 12 }]}>
+                {t('gameSetup.playerNameMaxHint')}
               </Text>
               <View style={styles.nameInputsContainer}>
                 {Array.from({ length: numPlayers }, (_, index) => ({ index, name: playerNames[index] ?? '' })).map(({ index, name }) => (
@@ -538,7 +568,7 @@ export default function GameSetupScreen() {
                           placeholderTextColor={colors.textSecondary}
                           value={name}
                           onChangeText={(text) => updatePlayerName(index, text)}
-                          maxLength={20}
+                          maxLength={GAME_SETUP.PLAYER_NAME_MAX_LENGTH}
                           multiline={false}
                         />
                       </View>
@@ -824,6 +854,160 @@ export default function GameSetupScreen() {
           </Card>
         </Animated.View>
 
+        {/* Playlists */}
+        <Animated.View entering={FadeInDown.delay(280).springify()}>
+          <Card style={styles.sectionCard}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t('gameSetup.playlists')}
+            </Text>
+            <Text style={[styles.categoryHint, { color: colors.textSecondary, marginBottom: spacing.sm }]}>
+              {t('gameSetup.playlistsHint')}
+            </Text>
+            <View style={styles.playlistRow}>
+              {playlists.map((playlist) => {
+                // Active only when selection exactly matches this collection (so Most popular doesn't also highlight Ramadan)
+                const isActive = selectedCategories.length === playlist.categoryIds.length &&
+                  playlist.categoryIds.every(id => selectedCategories.includes(id));
+                const isRamadan = playlist.id === 'ramadan';
+                const isMostPopular = playlist.id === 'most-popular';
+                const chipText = isActive ? colors.accent : colors.textSecondary;
+                const iconColor = isActive ? colors.accent : colors.textSecondary;
+                return (
+                  <Pressable
+                    key={playlist.id}
+                    onPress={() => applyPlaylist(playlist.categoryIds)}
+                    style={({ pressed }) => [
+                      styles.playlistChip,
+                      styles.playlistChipWithIcon,
+                      {
+                        backgroundColor: pressed || isActive ? colors.accentLight : colors.border,
+                        borderColor: isActive ? colors.accent : colors.border,
+                        borderWidth: isActive ? 2 : 1,
+                      },
+                    ]}
+                  >
+                    {isRamadan && (
+                      <Svg width={18} height={18} viewBox="0 -960 960 960" style={styles.playlistChipIcon}>
+                        <Path fill={iconColor} d="M40-120v-491q-18-11-29-28.5T0-680q0-23 24-56t56-64q32 31 56 64t24 56q0 23-11 40.5T120-611v171h80v-80q0-25 16-48t46-30q-11-17-16.5-37t-5.5-41q0-40 19-74t51-56l170-114 170 114q32 22 51 56t19 74q0 21-5.5 41T698-598q30 7 46 30t16 48v80h80v-171q-18-11-29-28.5T800-680q0-23 24-56t56-64q32 31 56 64t24 56q0 23-11 40.5T920-611v491H520v-160q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280v160H40Zm356-480h168q32 0 54-22t22-54q0-20-9-36.5T606-740l-126-84-126 84q-16 11-25 27.5t-9 36.5q0 32 22 54t54 22ZM120-200h240v-80q0-50 35-85t85-35q50 0 85 35t35 85v80h240v-160H680v-160H280v160H120v160Zm360-320Zm0-80Zm0 2Z" />
+                      </Svg>
+                    )}
+                    {isMostPopular && (
+                      <Svg width={18} height={18} viewBox="0 -960 960 960" style={styles.playlistChipIcon}>
+                        <Path fill={iconColor} d="m521-500 59-43 58 43-23-68 59-43h-72l-22-69-22 69h-73l59 43-23 68Zm-41 220q83 0 141.5-58T680-480q0-8-.5-16t-2.5-16q-11 47-49 77.5T539-404q-60 0-101-41t-41-101q0-46 26-82.5t68-51.5h-11q-84 0-142 58.5T280-480q0 84 58 142t142 58Zm0 252L346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z" />
+                      </Svg>
+                    )}
+                    <Text
+                      style={[
+                        styles.playlistChipText,
+                        { color: chipText, fontWeight: isActive ? '700' : '500' },
+                      ]}
+                    >
+                      {t(playlist.nameKey as Parameters<typeof t>[0])}
+                    </Text>
+                    {isActive && (
+                      <View style={[styles.playlistChipCheck, { backgroundColor: colors.accentLight }]}>
+                        <Text style={[styles.playlistChipCheckText, { color: colors.accent }]}>✓</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+              <Pressable
+                onPress={clearPlaylist}
+                style={({ pressed }) => [
+                  styles.playlistChip,
+                  {
+                    backgroundColor: pressed || selectedCategories.length === 0 ? colors.accentLight : colors.border,
+                    borderColor: selectedCategories.length === 0 ? colors.accent : colors.border,
+                    borderWidth: selectedCategories.length === 0 ? 2 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.playlistChipText,
+                    { color: selectedCategories.length === 0 ? colors.accent : colors.textSecondary, fontWeight: selectedCategories.length === 0 ? '700' : '500' },
+                  ]}
+                >
+                  {t('gameSetup.playlistsClear')}
+                </Text>
+              </Pressable>
+              {customPlaylists.map((custom) => {
+                const isActive = selectedCategories.length === custom.categoryIds.length &&
+                  custom.categoryIds.every(id => selectedCategories.includes(id));
+                return (
+                  <Pressable
+                    key={custom.id}
+                    onPress={() => applyPlaylist(custom.categoryIds)}
+                    onLongPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      showAlert({
+                        title: t('gameSetup.deleteCollectionTitle'),
+                        message: t('gameSetup.deleteCollectionMessage').replace('{{name}}', custom.name),
+                        buttons: [
+                          { text: t('settings.cancel'), style: 'cancel' as const },
+                          {
+                            text: t('settings.delete'),
+                            style: 'destructive' as const,
+                            onPress: async () => {
+                              await deleteCustomPlaylist(custom.id);
+                              getCustomPlaylists().then(setCustomPlaylists);
+                              if (isActive) setSelectedCategories([]);
+                            },
+                          },
+                        ],
+                      });
+                    }}
+                    style={({ pressed }) => [
+                      styles.playlistChip,
+                      {
+                        backgroundColor: pressed || isActive ? colors.accentLight : colors.border,
+                        borderColor: isActive ? colors.accent : colors.border,
+                        borderWidth: isActive ? 2 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.playlistChipText,
+                        { color: isActive ? colors.accent : colors.textSecondary, fontWeight: isActive ? '700' : '500' },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {custom.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  navigation.navigate('CreatePlaylist', { initialCategoryIds: selectedCategories.length > 0 ? selectedCategories : undefined });
+                }}
+                style={({ pressed }) => [
+                  styles.playlistChip,
+                  styles.playlistChipCreate,
+                  {
+                    backgroundColor: pressed ? colors.accentLight : colors.border,
+                    borderColor: colors.accent,
+                    borderWidth: 1,
+                    borderStyle: 'dashed',
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.playlistChipText, { color: colors.accent, fontWeight: '600' }]}
+                >
+                  + {t('gameSetup.playlistsCreate')}
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={[styles.collectionsExplanation, { color: colors.textSecondary }]}>
+              {t('gameSetup.collectionsExplanation')}
+            </Text>
+          </Card>
+        </Animated.View>
+
         {/* Categories Card */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
           <Card style={styles.sectionCard}>
@@ -840,8 +1024,8 @@ export default function GameSetupScreen() {
               )}
             </View>
             <Text style={[styles.categoryHint, { color: colors.textSecondary }]}>
-              {selectedCategories.length === 0 
-                ? 'Select specific categories, or leave empty to use all' 
+              {selectedCategories.length === 0
+                ? 'Select one category, or leave empty to use all'
                 : 'Long press a category to see details'}
             </Text>
             <View style={styles.categoryGrid}>
@@ -882,21 +1066,23 @@ export default function GameSetupScreen() {
                           <Text style={styles.checkText}>✓</Text>
                         </View>
                       )}
-                      <Text
-                        style={[
-                          styles.categoryText,
-                          {
-                            color: selectedCategories.includes(category.id)
-                              ? colors.accent
-                              : colors.textSecondary,
-                            fontWeight: selectedCategories.includes(category.id)
-                              ? '700'
-                              : '500',
-                          },
-                        ]}
-                      >
-                        {category.name}
-                      </Text>
+                      <View style={styles.categoryChipTextWrap}>
+                        <Text
+                          style={[
+                            styles.categoryText,
+                            {
+                              color: selectedCategories.includes(category.id)
+                                ? colors.accent
+                                : colors.textSecondary,
+                              fontWeight: selectedCategories.includes(category.id)
+                                ? '700'
+                                : '500',
+                            },
+                          ]}
+                        >
+                          {category.name}
+                        </Text>
+                      </View>
                     </View>
                   </Pressable>
                 </Animated.View>
@@ -919,7 +1105,7 @@ export default function GameSetupScreen() {
                     ]}
                   >
                     <Text style={[styles.seeMoreText, { color: colors.accent }]}>
-                      See More ({availableCategories.length - MAX_VISIBLE_CATEGORIES})
+                      See More ({orderedForDisplay.length - MAX_VISIBLE_CATEGORIES})
                     </Text>
                   </Pressable>
                 </Animated.View>
@@ -999,7 +1185,7 @@ export default function GameSetupScreen() {
               placeholderTextColor={colors.textSecondary}
               value={tempNameInput}
               onChangeText={setTempNameInput}
-              maxLength={20}
+              maxLength={GAME_SETUP.PLAYER_NAME_MAX_LENGTH}
               autoFocus
               onSubmitEditing={handleNameInputSubmit}
             />
@@ -1113,7 +1299,8 @@ export default function GameSetupScreen() {
                 <Text style={[styles.modalCloseBtnText, { color: colors.text }]}>✕</Text>
               </Pressable>
             </View>
-            <ScrollView 
+            <ScrollView
+              ref={allCategoriesScrollRef}
               style={styles.categoriesList}
               contentContainerStyle={styles.categoriesListContent}
               showsVerticalScrollIndicator={false}
@@ -1146,6 +1333,8 @@ export default function GameSetupScreen() {
                     onPress={() => {
                       toggleCategory(category.id);
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      // Roll up to show Selected section so user sees what they picked
+                      allCategoriesScrollRef.current?.scrollTo({ y: 0, animated: true });
                     }}
                     style={({ pressed }) => [
                       styles.categoryListItem,
@@ -1658,6 +1847,51 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     lineHeight: 20, // Improved line height
   },
+  playlistRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  playlistChip: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 20,
+  },
+  playlistChipWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  playlistChipIcon: {
+    marginRight: 0,
+  },
+  playlistChipCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: spacing.xs,
+  },
+  playlistChipCheckText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  playlistChipText: {
+    ...typography.caption,
+    fontSize: 14,
+  },
+  playlistChipCreate: {
+    borderStyle: 'dashed',
+  },
+  collectionsExplanation: {
+    ...typography.caption,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing.sm,
+    opacity: 0.9,
+  },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1671,6 +1905,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     minHeight: 44, // iOS accessibility minimum
     justifyContent: 'center',
+    alignSelf: 'flex-start', // Size chip to content so text is visible
   },
   categoryContent: {
     flexDirection: 'row',
@@ -1690,9 +1925,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  categoryChipTextWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   categoryText: {
     ...typography.caption,
     fontSize: 13,
+  },
+  categoryChipDescription: {
+    ...typography.caption,
+    fontSize: 10,
+    marginTop: 2,
+    opacity: 0.85,
   },
   lockIcon: {
     fontSize: 12,

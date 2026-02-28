@@ -1,4 +1,5 @@
 import { Player, GameSettings, Category } from '../types';
+import { VOTING_TIMER } from '../constants';
 
 export const generatePlayerNames = (count: number): string[] => {
   const names: string[] = [];
@@ -10,10 +11,8 @@ export const generatePlayerNames = (count: number): string[] => {
 
 /** Voting/discussion time in seconds: dynamic by player count (base + per player), clamped 60–300 */
 export const getVotingTimeSeconds = (numPlayers: number): number => {
-  const base = 45;
-  const perPlayer = 15;
-  const total = base + perPlayer * numPlayers;
-  return Math.min(300, Math.max(60, total));
+  const total = VOTING_TIMER.BASE_SECONDS + VOTING_TIMER.PER_PLAYER_SECONDS * numPlayers;
+  return Math.min(VOTING_TIMER.MAX_SECONDS, Math.max(VOTING_TIMER.MIN_SECONDS, total));
 };
 
 export const createPlayers = (
@@ -134,17 +133,28 @@ export const selectDifferentCategory = (
   return pool[Math.floor(Math.random() * pool.length)];
 };
 
-// Select a random single category when none are selected
-export const selectSingleRandomCategory = (categories: Category[]): string => {
-  // Filter out locked categories, and categories with no words
-  const availableCategories = categories.filter(c => 
-    (!c.locked || c.isCustom) && c.words.length > 0
+/** Category IDs never chosen when user didn't select any categories (random play). Only appear when explicitly selected in the category section. */
+export const RANDOM_PLAY_EXCLUDED_CATEGORY_IDS: string[] = ['msa'];
+
+// Select a random single category when none are selected (e.g. "Play" with no categories chosen).
+// excludeCategoryIds: when provided (e.g. RANDOM_PLAY_EXCLUDED_CATEGORY_IDS), those categories are never picked.
+export const selectSingleRandomCategory = (
+  categories: Category[],
+  excludeCategoryIds: string[] = []
+): string => {
+  const excludeSet = new Set(excludeCategoryIds);
+  // Filter out locked categories, categories with no words, and any excluded IDs
+  const availableCategories = categories.filter(
+    c =>
+      (!c.locked || c.isCustom) &&
+      c.words.length > 0 &&
+      !excludeSet.has(c.id)
   );
-  
+
   if (availableCategories.length === 0) {
     return '';
   }
-  
+
   return availableCategories[Math.floor(Math.random() * availableCategories.length)].id;
 };
 

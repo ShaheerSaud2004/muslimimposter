@@ -1,6 +1,6 @@
 {
   "name": "khafi",
-  "version": "1.1.4",
+  "version": "1.2.1",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "update-version": "npm version patch --no-git-tag-version",
@@ -9,8 +9,11 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build:web": "expo export -p web && node scripts/setup-pwa.js",
+    "build:android:aab": "eas build --platform android --profile production",
+    "build:ios:testflight": "eas build --platform ios --profile production --auto-submit",
     "serve:web": "npx serve dist",
     "list-content": "node scripts/generate-words-questions-list.js",
+    "resize-app-previews": "node scripts/resize-app-previews.js",
     "test": "jest --config jest.config.js",
     "test:watch": "jest --config jest.config.js --watch"
   },
@@ -49,6 +52,7 @@
     "jest-expo": "^54.0.17",
     "nodemailer": "^7.0.13",
     "puppeteer": "^24.37.5",
+    "sharp": "^0.34.5",
     "ts-jest": "^29.4.6",
     "typescript": "^5.3.3"
   },

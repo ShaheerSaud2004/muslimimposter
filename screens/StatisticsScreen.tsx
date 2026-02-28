@@ -19,9 +19,11 @@ import { Card } from '../components/Card';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { getGameResults, clearGameResults, type GameResult } from '../utils/storage';
+import { getAchievements, type Badge } from '../utils/achievements';
 import { showAlert } from '../components/Alert';
 import { getMaxContentWidth } from '../utils/responsive';
 import { NavigationHeader } from '../components/NavigationHeader';
+import Svg, { Path } from 'react-native-svg';
 
 type StatisticsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -52,11 +54,14 @@ export default function StatisticsScreen() {
   const insets = useSafeAreaInsets();
   const maxWidth = getMaxContentWidth();
   const [results, setResults] = useState<GameResult[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadResults = useCallback(async () => {
     const data = await getGameResults();
     setResults(data);
+    const achievements = await getAchievements();
+    setBadges(achievements);
   }, []);
 
   useFocusEffect(
@@ -77,6 +82,9 @@ export default function StatisticsScreen() {
   const impostersWon = totalRounds - playersWon;
   const winRate = totalRounds > 0 ? Math.round((playersWon / totalRounds) * 100) : 0;
   const recentResults = [...results].reverse().slice(0, RECENT_LIMIT);
+  const unlockedCount = badges.filter((b) => b.unlocked).length;
+
+  const [activeTab, setActiveTab] = useState<'stats' | 'achievements'>('stats');
 
   const handleClearStats = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -136,7 +144,82 @@ export default function StatisticsScreen() {
             </Text>
           </View>
 
-          {totalRounds === 0 ? (
+          <View style={[styles.tabBar, { backgroundColor: colors.border + '40', borderRadius: 14 }]}>
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('stats'); }}
+              style={[styles.tab, activeTab === 'stats' && { backgroundColor: colors.cardBackground, ...styles.tabActive }]}
+            >
+              <Text style={[styles.tabLabel, { color: activeTab === 'stats' ? colors.accent : colors.textSecondary }]}>
+                {t('stats.tabStats')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('achievements'); }}
+              style={[styles.tab, activeTab === 'achievements' && { backgroundColor: colors.cardBackground, ...styles.tabActive }]}
+            >
+              <Text style={[styles.tabLabel, { color: activeTab === 'achievements' ? colors.accent : colors.textSecondary }]}>
+                {t('stats.tabAchievements')}
+              </Text>
+            </Pressable>
+          </View>
+
+          {activeTab === 'achievements' ? (
+            <View style={styles.tabContent}>
+              <Animated.View entering={FadeIn.duration(200)} style={styles.achievementsTab}>
+                <View style={[styles.achievementsSummary, { backgroundColor: colors.accentLight + '50', borderColor: colors.accent }]}>
+                  <Text style={[styles.achievementsSummaryValue, { color: colors.accent }]}>
+                    {unlockedCount} / {badges.length}
+                  </Text>
+                  <Text style={[styles.achievementsSummaryLabel, { color: colors.textSecondary }]}>
+                    {t('achievements.unlocked')}
+                  </Text>
+                </View>
+                <View style={styles.achievementsList}>
+                  {badges.map((badge, i) => (
+                    <Animated.View
+                      key={badge.id}
+                      entering={FadeInDown.delay(50 + i * 40).springify()}
+                      style={[
+                        styles.achievementCard,
+                        {
+                          backgroundColor: badge.unlocked ? colors.cardBackground : colors.cardBackground,
+                          borderColor: badge.unlocked ? colors.accent + '60' : colors.border,
+                          borderWidth: badge.unlocked ? 2 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={[styles.achievementIconWrap, { backgroundColor: badge.unlocked ? colors.accentLight : colors.border + '80' }]}>
+                        {badge.unlocked ? (
+                          <Svg width={36} height={36} viewBox="0 0 24 24" fill={colors.accent}>
+                            <Path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C18.08 14.63 20 12.55 20 10V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+                          </Svg>
+                        ) : (
+                          <Svg width={36} height={36} viewBox="0 0 24 24" fill={colors.textSecondary}>
+                            <Path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                          </Svg>
+                        )}
+                      </View>
+                      <View style={styles.achievementCardContent}>
+                        <Text style={[styles.achievementCardTitle, { color: badge.unlocked ? colors.text : colors.textSecondary }]} numberOfLines={2}>
+                          {t(badge.titleKey)}
+                        </Text>
+                        {badge.progress != null && (
+                          <Text style={[styles.achievementCardProgress, { color: colors.textSecondary }]}>
+                            {badge.progress}
+                          </Text>
+                        )}
+                        <View style={[styles.achievementCardStatus, { backgroundColor: badge.unlocked ? colors.accent + '25' : colors.border + '40' }]}>
+                          <Text style={[styles.achievementCardStatusText, { color: badge.unlocked ? colors.accent : colors.textSecondary }]}>
+                            {badge.unlocked ? t('achievements.unlocked') : t('achievements.locked')}
+                          </Text>
+                        </View>
+                      </View>
+                    </Animated.View>
+                  ))}
+                </View>
+              </Animated.View>
+            </View>
+          ) : totalRounds === 0 ? (
             <Animated.View entering={FadeIn.delay(100)}>
               <Card style={[styles.emptyCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
                 <Text style={[styles.emptyIcon, { color: colors.textSecondary }]}>📊</Text>
@@ -320,6 +403,98 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontSize: 13,
     textAlign: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    padding: 4,
+    marginBottom: spacing.lg,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tabLabel: {
+    ...typography.bodyBold,
+    fontSize: 15,
+  },
+  tabContent: {
+    minHeight: 200,
+  },
+  achievementsTab: {
+    marginBottom: spacing.xl,
+  },
+  achievementsSummary: {
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  achievementsSummaryValue: {
+    ...typography.heading,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  achievementsSummaryLabel: {
+    ...typography.caption,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  achievementsList: {
+    gap: spacing.md,
+  },
+  achievementCard: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  achievementIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  achievementCardContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  achievementCardTitle: {
+    ...typography.bodyBold,
+    fontSize: 16,
+    marginBottom: spacing.xs,
+  },
+  achievementCardProgress: {
+    ...typography.caption,
+    fontSize: 13,
+    marginBottom: spacing.sm,
+  },
+  achievementCardStatus: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: 8,
+  },
+  achievementCardStatusText: {
+    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
   },
   recentSection: {
     marginBottom: spacing.xl,

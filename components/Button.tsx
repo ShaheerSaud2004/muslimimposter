@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { Text, StyleSheet, Pressable, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -7,13 +7,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
 import { typography, spacing } from '../theme';
+import { getResponsiveFontSize } from '../utils/responsive';
 import * as Haptics from 'expo-haptics';
 
 type ButtonProps = {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
   disabled?: boolean;
 };
@@ -100,7 +101,7 @@ export const Button: React.FC<ButtonProps> = ({
             typography.bodyBold,
             {
               color: getTextColor(),
-              fontSize: 18,
+              fontSize: getResponsiveFontSize(18),
               fontWeight: '700',
             },
             textStyle,

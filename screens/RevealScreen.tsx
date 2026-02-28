@@ -6,6 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
+  Share,
+  Platform,
+  Modal,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as WebBrowser from 'expo-web-browser';
@@ -34,13 +37,18 @@ import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
-import { getCategoryName, createPlayers, selectRandomWord, selectImposterQuizQuestion, selectDifferentCategory, selectSingleRandomCategory } from '../utils/game';
+import { getCategoryName, createPlayers, selectRandomWord, selectImposterQuizQuestion, selectDifferentCategory, selectSingleRandomCategory, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS } from '../utils/game';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories, getUsedWords, addUsedWord, clearUsedWords, getSessionUsedQuestionIds, addSessionUsedQuestionId, clearSessionUsedQuestionIds, getSessionUsedWords, addSessionUsedWord, clearSessionUsedWords, saveGameResult, GameResult } from '../utils/storage';
 import { GameSettings } from '../types';
 import { showAlert } from '../components/Alert';
-import { getMaxContentWidth } from '../utils/responsive';
-import { getLearnMore } from '../data/learnMore';
+import { getMaxContentWidth, getResponsiveFontSize } from '../utils/responsive';
+import { APP } from '../constants';
+import { getLearnMoreOrFallback } from '../data/learnMore';
+import { useHaptics } from '../contexts/HapticsContext';
+import { playRevealFanfare, playCorrect, playWrong } from '../utils/soundEffects';
+import { getAchievements, type Badge } from '../utils/achievements';
+import { TypingText } from '../components/TypingText';
 
 type RevealScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -54,18 +62,10 @@ const useTypewriter = (text: string, speed: number = 30, delay: number = 0) => {
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Clear any existing timeouts
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    if (delayTimeoutRef.current) {
-      clearTimeout(delayTimeoutRef.current);
-    }
-
-    // Reset displayed text
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (delayTimeoutRef.current) clearTimeout(delayTimeoutRef.current);
     setDisplayedText('');
 
-    // Start typing after delay
     delayTimeoutRef.current = setTimeout(() => {
       const targetText = text;
       let currentIndex = 0;
@@ -82,12 +82,8 @@ const useTypewriter = (text: string, speed: number = 30, delay: number = 0) => {
     }, delay);
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (delayTimeoutRef.current) {
-        clearTimeout(delayTimeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (delayTimeoutRef.current) clearTimeout(delayTimeoutRef.current);
     };
   }, [text, speed, delay]);
 
@@ -98,12 +94,14 @@ export default function RevealScreen() {
   const navigation = useNavigation<RevealScreenNavigationProp>();
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { soundEnabled } = useHaptics();
   const { players, settings, setPlayers, setSettings } = useGame();
   const insets = useSafeAreaInsets();
   const maxWidth = getMaxContentWidth();
   const [customCategories, setCustomCategories] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(true);
   const [hasAnsweredCorrect, setHasAnsweredCorrect] = useState(false);
+  const [newlyUnlockedBadge, setNewlyUnlockedBadge] = useState<Badge | null>(null);
 
   // Animation values for New Game transition - simple fade
   const screenOpacity = useSharedValue(1);
@@ -154,17 +152,41 @@ export default function RevealScreen() {
   const imposters = players.filter(p => p.role === 'imposter');
   const doubleAgents = players.filter(p => p.role === 'doubleAgent');
   const allCategories = [...defaultCategories, ...customCategories];
+  // Stable category name for typewriter so it doesn't reset when customCategories loads
+  const categoryNameStableRef = useRef('');
+  const currentCategoryName = getCategoryName(settings.secretCategory, allCategories) ?? '';
+  if (currentCategoryName !== '') categoryNameStableRef.current = currentCategoryName;
+  const categoryNameForTypewriter = categoryNameStableRef.current;
 
   const handleReveal = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    playRevealFanfare(soundEnabled);
     setShowResults(true);
     setHasAnsweredCorrect(false); // Reset when revealing
+  };
+
+  const handleShareResult = async () => {
+    if (!settings) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const baseMessage = t('reveal.shareMessage').replace('{{word}}', settings.secretWord);
+    const message = `${baseMessage}\n\n${APP.TAGLINE}\n\n${t('reveal.downloadApp')} ${APP.STORE_URL}`;
+    try {
+      if (Platform.OS !== 'web' && Share.share) {
+        await Share.share({
+          message,
+          title: t('reveal.shareTitle'),
+        });
+      }
+    } catch {
+      // Share cancelled or not available
+    }
   };
 
   const handleCorrectAnswer = async (wasCorrect: boolean) => {
     if (!settings) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (wasCorrect) playCorrect(soundEnabled); else playWrong(soundEnabled);
     setHasAnsweredCorrect(true);
     
     try {
@@ -186,9 +208,20 @@ export default function RevealScreen() {
         mode: settings.mode,
         imposterNames,
         winnerNames,
+        usedBlindImposter: settings.specialModes?.blindImposter,
+        usedDoubleAgent: settings.specialModes?.doubleAgent,
       };
-      
+
+      const beforeAchievements = await getAchievements();
       await saveGameResult(result);
+      const afterAchievements = await getAchievements();
+      const newlyUnlocked = afterAchievements.find(
+        (a, i) => a.unlocked && !beforeAchievements[i]?.unlocked
+      );
+      if (newlyUnlocked) {
+        setNewlyUnlockedBadge(newlyUnlocked);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
     } catch (error) {
       console.error('Error saving game result:', error);
     }
@@ -245,7 +278,7 @@ export default function RevealScreen() {
 
     try {
       const allCategories = [...defaultCategories, ...customCategories];
-      const newSecretCategoryId = selectSingleRandomCategory(allCategories);
+      const newSecretCategoryId = selectSingleRandomCategory(allCategories, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS);
       if (!newSecretCategoryId) {
         navigation.navigate('GameSetup');
         return;
@@ -326,9 +359,8 @@ export default function RevealScreen() {
         playerNames: playerNamesOrdered,
       };
 
-      setPlayers(newPlayers);
-      setSettings(newSettings);
-      setTimeout(() => navigation.navigate('PassAndPlay'), 0);
+      // Navigate with next round in params so Reveal screen doesn't re-render with new data; PassAndPlay applies it after slide
+      navigation.navigate('PassAndPlay', { nextRound: { players: newPlayers, settings: newSettings } });
     } catch (error) {
       console.error('Error in Play Again (random):', error);
       navigation.navigate('GameSetup');
@@ -426,9 +458,8 @@ export default function RevealScreen() {
         playerNames: playerNamesOrdered,
       };
 
-      setPlayers(newPlayers);
-      setSettings(newSettings);
-      setTimeout(() => navigation.navigate('PassAndPlay'), 0);
+      // Navigate with next round in params so Reveal screen doesn't re-render with new data; PassAndPlay applies it after slide
+      navigation.navigate('PassAndPlay', { nextRound: { players: newPlayers, settings: newSettings } });
     } catch (error) {
       console.error('Error in Play Again:', error);
       navigation.navigate('GameSetup');
@@ -462,8 +493,54 @@ export default function RevealScreen() {
     );
   };
 
+  // Auto-dismiss achievement popup after 4 seconds
+  useEffect(() => {
+    if (!newlyUnlockedBadge) return;
+    const t = setTimeout(() => setNewlyUnlockedBadge(null), 4000);
+    return () => clearTimeout(t);
+  }, [newlyUnlockedBadge]);
+
   return (
     <Animated.View style={[StyleSheet.absoluteFill, screenAnimatedStyle]}>
+      {/* Achievement unlocked popup */}
+      <Modal
+        visible={!!newlyUnlockedBadge}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNewlyUnlockedBadge(null)}
+      >
+        <Pressable
+          style={styles.achievementPopupOverlay}
+          onPress={() => setNewlyUnlockedBadge(null)}
+        >
+          <Pressable
+            style={[styles.achievementPopupCard, { backgroundColor: colors.cardBackground, borderColor: colors.accent }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.achievementPopupIconWrap, { backgroundColor: colors.accentLight }]}>
+              <Svg width={40} height={40} viewBox="0 0 24 24" fill={colors.accent}>
+                <Path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C18.08 14.63 20 12.55 20 10V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+              </Svg>
+            </View>
+            <TypingText
+              text={t('achievements.achievementUnlocked')}
+              style={[styles.achievementPopupTitle, { color: colors.accent }]}
+              delayPerChar={40}
+            />
+            {newlyUnlockedBadge && (
+              <TypingText
+                text={t(newlyUnlockedBadge.titleKey)}
+                style={[styles.achievementPopupBadgeName, { color: colors.text }]}
+                delayPerChar={45}
+              />
+            )}
+            <Text style={[styles.achievementPopupTapHint, { color: colors.textSecondary }]}>
+              Tap to close
+            </Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
         edges={['top', 'bottom']}
@@ -525,18 +602,34 @@ export default function RevealScreen() {
         ) : (
           <>
             <Animated.View entering={FadeInDown.delay(0).springify()}>
-              <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>
-                  Game Results
-                </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                  The secret is revealed
-                </Text>
+              <View style={styles.headerWrap}>
+                <View style={styles.header}>
+                  <Text style={[styles.title, { color: colors.text }]}>
+                    Game Results
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    The secret is revealed
+                  </Text>
+                </View>
+                <View style={styles.headerShareIcon} pointerEvents="box-none">
+                  <Pressable
+                    onPress={handleShareResult}
+                    style={({ pressed }) => [
+                      styles.shareIconButton,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    hitSlop={12}
+                  >
+                    <Svg width={28} height={28} viewBox="0 -960 960 960" fill={colors.text}>
+                      <Path d="M680-80q-50 0-85-35t-35-85q0-6 3-28L282-392q-16 15-37 23.5t-45 8.5q-50 0-85-35t-35-85q0-50 35-85t85-35q24 0 45 8.5t37 23.5l281-164q-2-7-2.5-13.5T560-760q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-24 0-45-8.5T598-672L317-508q2 7 2.5 13.5t.5 14.5q0 8-.5 14.5T317-452l281 164q16-15 37-23.5t45-8.5q50 0 85 35t35 85q0 50-35 85t-85 35Zm0-80q17 0 28.5-11.5T720-200q0-17-11.5-28.5T680-240q-17 0-28.5 11.5T640-200q0 17 11.5 28.5T680-160ZM200-440q17 0 28.5-11.5T240-480q0-17-11.5-28.5T200-520q-17 0-28.5 11.5T160-480q0 17 11.5 28.5T200-440Zm508.5-291.5Q720-743 720-760t-11.5-28.5Q697-800 680-800t-28.5 11.5Q640-777 640-760t11.5 28.5Q663-720 680-720t28.5-11.5ZM680-200ZM200-480Zm480-280Z" />
+                    </Svg>
+                  </Pressable>
+                </View>
               </View>
             </Animated.View>
 
             <Card style={styles.resultsCard}>
-              {/* Secret Word Row - Zooms in with bounce */}
+              {/* Secret Word Row */}
               <Animated.View entering={ZoomIn.delay(300).springify()}>
                 <View style={styles.infoRow}>
                   <Animated.View entering={BounceIn.delay(350).springify()}>
@@ -550,15 +643,18 @@ export default function RevealScreen() {
                     <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                       {settings.mode === 'quiz' && settings.quizQuestion ? 'Answer' : 'Secret Word'}
                     </Text>
-                    <TypewriterText 
-                      text={settings.secretWord} 
-                      style={[styles.infoValue, { color: colors.accent }]}
+                    <TypewriterText
+                      key="secret-word"
+                      text={settings.secretWord}
+                      style={[styles.infoValue, { color: colors.accent, fontSize: getResponsiveFontSize(30) }]}
                       speed={30}
                       delay={400}
+                      allowFontScaling={false}
                     />
                     <View style={styles.infoDescriptionBlock}>
                       <TypewriterText
-                        text={getCategoryName(settings.secretCategory, allCategories)}
+                        key="category"
+                        text={categoryNameForTypewriter}
                         style={[styles.infoDescription, { color: colors.textSecondary }]}
                         speed={25}
                         delay={400 + (settings.secretWord.length * 30) + 100}
@@ -712,7 +808,7 @@ export default function RevealScreen() {
                             { backgroundColor: colors.accentLight, borderColor: colors.accent, opacity: pressed ? 0.8 : 1 },
                           ]}
                         >
-                          <Text style={[styles.viewStatsButtonText, { color: colors.accent }]}>
+                          <Text style={[styles.viewStatsButtonText, { color: '#FFFFFF', fontWeight: '700' }]}>
                             {t('stats.viewStatsLink')}
                           </Text>
                         </Pressable>
@@ -722,17 +818,17 @@ export default function RevealScreen() {
                 </View>
               </Animated.View>
 
-              {/* Learn More – shown for Seerah, Prophets, Islamic History, etc. when content exists */}
+              {/* Learn More – for every word: curated content or fallback with search link */}
               {(() => {
-                const learnMore = getLearnMore(settings.secretWord);
-                if (!learnMore) return null;
+                const categoryName = getCategoryName(settings.secretCategory, allCategories);
+                const learnMore = getLearnMoreOrFallback(settings.secretWord, categoryName);
                 return (
                   <>
                     <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     <Animated.View entering={FadeIn.delay(1700).springify()}>
                       <View style={[styles.learnMoreCard, { backgroundColor: colors.accentLight + '40', borderColor: colors.accent }]}>
                         <Text style={[styles.learnMoreTitle, { color: colors.accent }]}>
-                          Learn about {settings.secretWord}
+                          {t('reveal.learnAbout').replace('{{word}}', settings.secretWord)}
                         </Text>
                         <Text style={[styles.learnMoreSynopsis, { color: colors.textSecondary }]}>
                           {learnMore.synopsis}
@@ -749,7 +845,7 @@ export default function RevealScreen() {
                             { backgroundColor: colors.accent, opacity: pressed ? 0.9 : 1 },
                           ]}
                         >
-                          <Text style={styles.learnMoreButtonText}>Watch video</Text>
+                          <Text style={[styles.learnMoreButtonText, { color: '#FFFFFF' }]}>{t('reveal.watchVideo')}</Text>
                         </Pressable>
                       </View>
                     </Animated.View>
@@ -758,7 +854,7 @@ export default function RevealScreen() {
               })()}
             </Card>
 
-            <Animated.View entering={FadeInDown.delay(1800).springify()} style={styles.buttonContainer}>
+            <Animated.View entering={SlideInDown.delay(1800).duration(700)} style={styles.buttonContainer}>
               <Button
                 title="Play Again"
                 onPress={handlePlayAgain}
@@ -783,6 +879,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  achievementPopupOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  achievementPopupCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  achievementPopupIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  achievementPopupTitle: {
+    ...typography.bodyBold,
+    fontSize: 18,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  achievementPopupBadgeName: {
+    ...typography.body,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  achievementPopupTapHint: {
+    ...typography.caption,
+    fontSize: 12,
+    textAlign: 'center',
+  },
   scrollView: {
     flex: 1,
   },
@@ -791,9 +927,17 @@ const styles = StyleSheet.create({
     width: '100%',
     flexGrow: 1,
   },
-  header: {
+  headerWrap: {
+    position: 'relative',
     marginBottom: spacing.xl,
+  },
+  header: {
     alignItems: 'center',
+  },
+  headerShareIcon: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
   },
   title: {
     ...typography.heading,
@@ -848,9 +992,9 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     ...typography.bodyBold,
-    fontSize: 18,
+    fontSize: 28,
     fontWeight: '600',
-    lineHeight: 24,
+    lineHeight: 36,
     textAlign: 'center',
     width: '100%',
   },
@@ -863,9 +1007,9 @@ const styles = StyleSheet.create({
   },
   infoDescription: {
     ...typography.caption,
-    fontSize: 13,
+    fontSize: 15,
     marginTop: spacing.xs / 2,
-    lineHeight: 20,
+    lineHeight: 22,
     textAlign: 'center',
     width: '100%',
   },
@@ -980,8 +1124,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     lineHeight: 22,
   },
+  shareIconButton: {
+    padding: spacing.sm,
+  },
   buttonContainer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.sm,
     marginBottom: spacing.lg,
     gap: spacing.md,
   },
@@ -1009,7 +1156,8 @@ const TypewriterText: React.FC<{
   style: any;
   speed?: number;
   delay?: number;
-}> = ({ text, style, speed = 30, delay = 0 }) => {
+  allowFontScaling?: boolean;
+}> = ({ text, style, speed = 30, delay = 0, allowFontScaling }) => {
   const displayedText = useTypewriter(text, speed, delay);
-  return <Text style={style}>{displayedText}</Text>;
+  return <Text style={style} allowFontScaling={allowFontScaling}>{displayedText}</Text>;
 };

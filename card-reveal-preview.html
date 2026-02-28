@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Khafī – 100 card reveal preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px 48px;
+      background: #1a1612;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #e8e4e0;
+    }
+    h1 {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 600;
+      color: #b8b0a8;
+      margin-bottom: 24px;
+    }
+    .card {
+      max-width: 350px;
+      margin: 0 auto 32px;
+      padding: 28px 24px 32px;
+      background: #2c261f;
+      border: 2px solid #3d3630;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: visible;
+    }
+    .card-index {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: #e8e4e0;
+      margin-bottom: 8px;
+    }
+    .card-sep { height: 1px; background: #3d3630; margin: 8px 0 16px; }
+    .category {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #b8b0a8;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .word-prefix {
+      font-size: 16px;
+      font-style: italic;
+      color: #b8b0a8;
+      text-align: center;
+      margin-bottom: 12px;
+      opacity: 0.85;
+    }
+    .word {
+      font-size: clamp(28px, 6.5vw, 44px);
+      font-weight: 700;
+      letter-spacing: 2px;
+      line-height: 1.2;
+      text-align: center;
+      color: #e8e4e0;
+      margin: 12px 0;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      overflow: visible;
+      max-width: 100%;
+    }
+    .translation {
+      font-size: 19px;
+      line-height: 26px;
+      font-style: italic;
+      font-weight: 500;
+      text-align: center;
+      color: #b8b0a8;
+      margin-top: 12px;
+      padding: 0 8px;
+      opacity: 0.9;
+      overflow: visible;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .no-translation { font-size: 14px; opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <h1>Card reveal preview (100 runs) – scroll to see formatting</h1>
+  
+  <div class="card">
+    <div class="card-index">1</div>
+    <div class="card-sep"></div>
+    <div class="category">CATEGORY: Stories from the Quran</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Ibrahim and the Fire</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Ramadan</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Zakat</div>
+    <div class="translation ">Charity (obligatory)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Malaysia</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Concepts</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Day of Judgment</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Prophets</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Yunus (AS)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Surahs</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Al-Baqarah</div>
+    <div class="translation ">The Cow</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Shafi</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Basic Islamic Terms</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Islam</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Worship &amp; Prayer</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Fajr</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic History</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Conquest of Spain</div>
+    <div class="translation ">Conquest of Spain - 711 CE</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic History</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Building of Al-Azhar</div>
+    <div class="translation ">Building of Al-Azhar - First university</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Women in Islam</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Sumayyah</div>
+    <div class="translation ">First martyr of Islam</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Angels</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Mikail</div>
+    <div class="translation ">Angel Michael – provision, rain</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Worship &amp; Prayer</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Adhan</div>
+    <div class="translation ">Call to prayer</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Masjid Life</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Quran Stand</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Marriage &amp; Nikah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Wali</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Angels</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Jibril</div>
+    <div class="translation ">Angel Gabriel – brought revelation</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Morocco</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Stories from the Quran</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">People of the Cave</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Masjid Life</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Jummah</div>
+    <div class="translation ">Friday prayer</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Bangladesh</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Stories from the Quran</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Ashab al-Ukhdud</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Architecture &amp; Places</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Kaaba</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Abu Hanifa</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Surahs</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Al-Ikhlas</div>
+    <div class="translation ">The Sincerity</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Seerah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Battle of Badr</div>
+    <div class="translation ">First major victory</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Shafi</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Companions of Prophet</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Zainab (RA)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Architecture &amp; Places</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Jerusalem</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Prophets</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Ismail (AS)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Women in Islam</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">,
+      </div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Months &amp; Holidays</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Jumada al-Awwal</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Ramadan</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Suhoor</div>
+    <div class="translation ">Pre-dawn meal</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Halal Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Milk</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Companions of Prophet</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Aisha (RA)</div>
+    <div class="translation ">Wife of the Prophet ﷺ – scholar of Islam</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Months &amp; Holidays</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Rabi al-Thani</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Halal Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Chicken</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Bangladesh</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Prophets</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Zakariyya (AS)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Marriage &amp; Nikah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Dowry</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Hajj &amp; Umrah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Tawaf</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic History</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Fall of Constantinople</div>
+    <div class="translation ">Fall of Constantinople - 1453 to Ottomans</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic History</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Crusades</div>
+    <div class="translation ">Crusades - Religious wars</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Surahs</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">An-Nas</div>
+    <div class="translation ">Mankind</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Basic Islamic Terms</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Prayer</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Surahs</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Al-Muddaththir</div>
+    <div class="translation ">The Cloaked One</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Hajj &amp; Umrah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Hajj</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Concepts</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Akhirah</div>
+    <div class="translation ">Afterlife</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">UAE</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Ramadan</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Dhikr</div>
+    <div class="translation ">Remembrance of Allah</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Basic Islamic Terms</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Hadith</div>
+    <div class="translation ">Prophetic saying</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Months &amp; Holidays</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Dhul Hijjah</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Malaysia</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Angels</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Munkar</div>
+    <div class="translation ">Angel – questions in the grave</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Turkey</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Sunnah Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Black Seed</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Women in Islam</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Maryam</div>
+    <div class="translation ">Mother of Prophet Isa (AS)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Companions of Prophet</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Zayd (RA)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Halal Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Olives</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Basic Islamic Terms</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Prophet</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Sunnah Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Pomegranate</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Basic Islamic Terms</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Hajj</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Angels</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Israfil</div>
+    <div class="translation ">Angel – will blow the Trumpet</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Clothing</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Niqab</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Sunnah Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Olives</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Sunnah Foods</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Tharid</div>
+    <div class="translation ">Bread and meat dish</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Women in Islam</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Nusaybah bint Ka\</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Marriage &amp; Nikah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Mahr</div>
+    <div class="translation ">Bridal gift / Dowry</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Ramadan</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Sadaqah</div>
+    <div class="translation ">Charity (voluntary)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Egypt</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Malaysia</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Hajj &amp; Umrah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Kaaba</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Months &amp; Holidays</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Ramadan</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Surahs</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Yasin</div>
+    <div class="translation ">The Heart of the Quran</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Surahs</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Al-Mulk</div>
+    <div class="translation ">The Sovereignty</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Ibn Qayyim</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Months &amp; Holidays</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Rajab</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Companions of Prophet</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Uthman (RA)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Prophets</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Adam (AS)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Malik</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Marriage &amp; Nikah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Nikah</div>
+    <div class="translation ">Marriage</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Women in Islam</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Nusaybah bint Ka\</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Women in Islam</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Khadija (RA)</div>
+    <div class="translation ">First wife of the Prophet ﷺ</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Basic Islamic Terms</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Muslim</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Tirmidhi</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Concepts</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Qiyamah</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Architecture &amp; Places</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Dome of the Rock</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Worship &amp; Prayer</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Dua</div>
+    <div class="translation ">Supplication</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Masjid Life</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Mosque</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Abu Hanifa</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Scholars &amp; Imams</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Imam Bukhari</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Stories from the Quran</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">People of the Elephant</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Countries &amp; Cities</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Morocco</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Seerah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Hijrah</div>
+    <div class="translation ">Migration to Madinah</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Marriage &amp; Nikah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Love Bank</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Marriage &amp; Nikah</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Dowry</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Stories from the Quran</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Prophet Saleh and the Camel</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Quran Concepts</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Resurrection</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Prophets</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Isa (AS)</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+  <div class="card">
+    <div class="category">CATEGORY: Islamic Months &amp; Holidays</div>
+    <div class="word-prefix">The word is...</div>
+    <div class="word">Rabi al-Awwal</div>
+    <div class="translation no-translation">(no translation)</div>
+  </div>
+  
+</body>
+</html>

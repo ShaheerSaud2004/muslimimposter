@@ -14,6 +14,7 @@ import Animated, {
   FadeIn,
   FadeInDown,
   SlideInRight,
+  SlideOutUp,
 } from 'react-native-reanimated';
 import { RootStackParamList } from '../App';
 import { Button } from '../components/Button';
@@ -23,7 +24,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
-import { getMaxContentWidth, getResponsivePadding } from '../utils/responsive';
+import { getMaxContentWidth, getResponsivePadding, getResponsiveFontSize } from '../utils/responsive';
+import { getHasSeenOnboarding, setHasSeenOnboarding } from '../utils/storage';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,7 +33,7 @@ type MenuScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Menu'>;
 
 export default function MenuScreen() {
   const navigation = useNavigation<MenuScreenNavigationProp>();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const maxWidth = getMaxContentWidth();
@@ -39,6 +41,7 @@ export default function MenuScreen() {
   
   const [showResetButton, setShowResetButton] = useState(false);
   const [showStatsHint, setShowStatsHint] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [forceRender, setForceRender] = useState(0);
   const buttonsRenderedRef = useRef(false);
   const buttonContainerRef = useRef<View | null>(null);
@@ -53,6 +56,7 @@ export default function MenuScreen() {
   useFocusEffect(
     React.useCallback(() => {
       setShowStatsHint(true);
+      getHasSeenOnboarding().then((seen) => setShowOnboarding(!seen));
     }, [])
   );
 
@@ -153,6 +157,19 @@ export default function MenuScreen() {
   // Calculate responsive logo size for smaller screens
   const logoSize = SCREEN_HEIGHT < 700 ? 280 : 360;
 
+  const handleOnboardingDismiss = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await setHasSeenOnboarding();
+    setShowOnboarding(false);
+  };
+
+  // Auto-dismiss welcome popup after 3.5s (like a notification)
+  useEffect(() => {
+    if (showOnboarding !== true) return;
+    const timer = setTimeout(handleOnboardingDismiss, 3500);
+    return () => clearTimeout(timer);
+  }, [showOnboarding]);
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -188,8 +205,8 @@ export default function MenuScreen() {
                 },
               ]}
             >
-              <Text style={[styles.statsHintText, { color: '#FFFFFF' }]}>
-                View Statistics!
+              <Text style={[styles.statsHintText, { color: '#FFFFFF', fontSize: getResponsiveFontSize(14) }]}>
+                {t('stats.viewStatsLink')}
               </Text>
             </Pressable>
           </Animated.View>
@@ -230,13 +247,21 @@ export default function MenuScreen() {
         <View style={styles.content}>
           <View style={styles.logoContainer}>
             <Animated.View style={titleAnimatedStyle}>
-              <Logo width={logoSize} height={logoSize} style={[styles.logo, { width: logoSize, height: logoSize }]} />
+              {theme === 'dark' ? (
+                <Logo width={logoSize} height={logoSize} style={[styles.logo, { width: logoSize, height: logoSize }]} />
+              ) : (
+                <Image
+                  source={require('../newlo.png')}
+                  style={[styles.logo, { width: logoSize, height: logoSize }]}
+                  resizeMode="contain"
+                />
+              )}
             </Animated.View>
             <View style={styles.taglineOverlay}>
               <Animated.View style={taglineAnimatedStyle}>
                 <View style={[styles.taglineContainer, { borderTopColor: colors.border }]}>
                   <Text
-                    style={[styles.tagline, { color: colors.textSecondary }]}
+                    style={[styles.tagline, { color: colors.textSecondary, fontSize: getResponsiveFontSize(15) }]}
                   >
                     {t('menu.tagline')}
                   </Text>
@@ -299,7 +324,7 @@ export default function MenuScreen() {
                   variant="secondary"
                   style={styles.resetButton}
                 />
-                <Text style={[styles.resetText, { color: colors.textSecondary }]}>
+                <Text style={[styles.resetText, { color: colors.textSecondary, fontSize: getResponsiveFontSize(14) }]}>
                   Buttons didn't load. Tap to reload.
                 </Text>
               </Animated.View>
@@ -307,6 +332,25 @@ export default function MenuScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {showOnboarding === true && (
+        <Animated.View
+          entering={FadeInDown.duration(300).springify()}
+          exiting={SlideOutUp.duration(250)}
+          style={[styles.welcomePopup, { top: Math.max(insets.top, spacing.sm) + spacing.sm, backgroundColor: colors.cardBackground, borderColor: colors.border }]}
+          pointerEvents="box-none"
+        >
+          <Pressable
+            onPress={handleOnboardingDismiss}
+            style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, paddingHorizontal: spacing.lg, gap: spacing.md }]}
+          >
+            <Logo width={40} height={40} style={styles.welcomePopupLogo} />
+            <View style={styles.welcomePopupTextWrap}>
+              <Text style={[styles.welcomePopupTitle, { color: colors.text, fontSize: getResponsiveFontSize(16) }]} numberOfLines={1}>{t('onboarding.welcomeTitle')}</Text>
+            </View>
+          </Pressable>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -446,5 +490,64 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: spacing.xs,
     textAlign: 'center',
+  },
+  onboardingOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  onboardingCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  onboardingTitle: {
+    ...typography.heading,
+    fontSize: 22,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  onboardingBody: {
+    ...typography.body,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  onboardingLogoWrap: {
+    marginBottom: spacing.lg,
+  },
+  onboardingLogo: {},
+  onboardingButton: {
+    width: '100%',
+  },
+  welcomePopup: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    zIndex: 1100,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  welcomePopupLogo: {},
+  welcomePopupTextWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  welcomePopupTitle: {
+    ...typography.heading,
+    fontSize: 17,
+    fontWeight: '600',
   },
 });

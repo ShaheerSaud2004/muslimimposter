@@ -149,7 +149,7 @@ export const Alert: React.FC = () => {
                         style={{
                           ...styles.alertButton,
                           ...(isDestructive ? {
-                            backgroundColor: colors.imposter + '20',
+                            backgroundColor: colors.imposter,
                             borderColor: colors.imposter,
                           } : {}),
                         }}

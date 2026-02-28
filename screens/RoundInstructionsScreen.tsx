@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -13,9 +13,15 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useTheme } from '../contexts/ThemeContext';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useHaptics } from '../contexts/HapticsContext';
+import { showAlert } from '../components/Alert';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
+import { getSettings } from '../utils/storage';
+import { getVotingTimeSeconds } from '../utils/game';
+import { DISCUSSION_TIME_PRESET_SECONDS } from '../constants';
 
 type RoundInstructionsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -25,18 +31,37 @@ type RoundInstructionsScreenNavigationProp = StackNavigationProp<
 export default function RoundInstructionsScreen() {
   const navigation = useNavigation<RoundInstructionsScreenNavigationProp>();
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  const { triggerImpact } = useHaptics();
   const { players, settings } = useGame();
 
   if (!settings || players.length === 0) {
     return null;
   }
 
-  const handleContinue = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  const handleLeave = () => {
+    triggerImpact(Haptics.ImpactFeedbackStyle.Light);
+    showAlert({
+      title: t('common.leaveGame'),
+      message: t('common.leaveGameConfirm'),
+      buttons: [
+        { text: t('common.leaveConfirmCancel'), style: 'cancel' },
+        { text: t('common.leaveConfirmLeave'), style: 'destructive', onPress: () => navigation.navigate('GameSetup') },
+      ],
+    });
+  };
+
+  const handleContinue = async () => {
+    triggerImpact(Haptics.ImpactFeedbackStyle.Heavy);
     if (settings.mode === 'quiz') {
       navigation.navigate('QuizAnswer');
     } else {
-      navigation.navigate('VotingTimer');
+      const s = await getSettings();
+      const initialSeconds =
+        s.discussionTimePreset != null
+          ? DISCUSSION_TIME_PRESET_SECONDS[s.discussionTimePreset]
+          : getVotingTimeSeconds(players.length);
+      navigation.navigate('VotingTimer', { initialSeconds });
     }
   };
 
@@ -62,9 +87,18 @@ export default function RoundInstructionsScreen() {
         <Animated.View 
           entering={FadeInDown.delay(0).springify()}
         >
+          <View style={styles.topBar}>
+            <Pressable
+              onPress={handleLeave}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text style={[styles.backButton, { color: colors.accent }]}>{t('common.back')}</Text>
+            </Pressable>
+          </View>
           <View style={styles.header}>
             <Text style={[styles.heading, { color: colors.text }]}>
-              Round Instructions
+              {t('game.roundInstructions')}
             </Text>
           </View>
 
@@ -86,9 +120,9 @@ export default function RoundInstructionsScreen() {
                 </View>
                 <View style={styles.startingPlayerContent}>
                   <Text style={[styles.startingPlayerLabel, { color: colors.textSecondary }]}>
-                    Starting Player
+                    {t('game.startingPlayer')}
                   </Text>
-                  <Text style={[styles.playerName, { color: colors.accent }]}>
+                  <Text style={[styles.playerName, { color: colors.accent }]} numberOfLines={1} ellipsizeMode="tail">
                     {startingPlayer.name}
                   </Text>
                 </View>
@@ -107,11 +141,11 @@ export default function RoundInstructionsScreen() {
                     </Svg>
                   </View>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Direction
+                    {t('game.direction')}
                   </Text>
                 </View>
                 <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-                  Proceed clockwise around the group
+                  {t('game.proceedClockwise')}
                 </Text>
               </View>
             </Animated.View>
@@ -128,18 +162,18 @@ export default function RoundInstructionsScreen() {
                     </Svg>
                   </View>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {settings.mode === 'word' ? 'Clue Round' : 'Quiz/Questions Mode'}
+                    {settings.mode === 'word' ? t('game.clueRound') : t('game.quizMode')}
                   </Text>
                 </View>
                 {settings.mode === 'quiz' && settings.quizQuestion ? (
                   <>
                     <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-                      Each player will answer a question. Normal players get the same question, but the imposter gets a different (but similar) question. After everyone answers, you'll see all the answers before revealing who the imposter is.
+                      {t('game.quizInstructions')}
                     </Text>
                   </>
                 ) : (
                   <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-                    Each player gives ONE clue word related to the secret word. Try not to reveal it!
+                    {t('game.oneClueEach')}
                   </Text>
                 )}
               </View>
@@ -157,11 +191,11 @@ export default function RoundInstructionsScreen() {
                     </Svg>
                   </View>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Voting
+                    {t('game.voting')}
                   </Text>
                 </View>
                 <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-                  After all clues/questions, discuss and vote IN PERSON. The app will reveal the results when you're ready.
+                  {t('game.votingInstructions')}
                 </Text>
               </View>
             </Animated.View>
@@ -170,7 +204,7 @@ export default function RoundInstructionsScreen() {
           <Animated.View entering={FadeIn.delay(500)} style={styles.buttonContainer}>
             <View style={styles.buttonWrapper}>
               <Button
-                title={settings.mode === 'quiz' ? "Start Answering Questions →" : "Proceed to Timer →"}
+                title={settings.mode === 'quiz' ? t('game.startAnsweringQuestions') : t('game.proceedToTimer')}
                 onPress={handleContinue}
                 style={styles.button}
                 textStyle={styles.buttonText}
@@ -195,10 +229,22 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
   header: {
     marginBottom: spacing.lg,
     alignItems: 'center',
     paddingTop: spacing.sm,
+  },
+  backButton: {
+    ...typography.bodyBold,
+    fontSize: 16,
   },
   heading: {
     ...typography.heading,

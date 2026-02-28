@@ -7,7 +7,7 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -32,12 +32,17 @@ import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { getCategoryName } from '../utils/game';
-import { getResponsiveCueWordFontSize, getResponsiveCueWordMinimumScale } from '../utils/responsive';
+import { getResponsiveCueWordFontSize, getResponsiveSplitPhraseFontSize, getResponsiveFontSize } from '../utils/responsive';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories } from '../utils/storage';
 import { getEnglishTranslation } from '../utils/translations';
+import { getQuranStoryBrief } from '../data/quranStoryDescriptions';
 import { Player } from '../types';
 import { NavigationHeader } from '../components/NavigationHeader';
+import { showAlert } from '../components/Alert';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useHaptics } from '../contexts/HapticsContext';
+import { getWordDisplayParts, WORD_DISPLAY } from '../utils/wordDisplay';
 
 type PassAndPlayScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -160,6 +165,8 @@ const PlayerCardDeck: React.FC<PlayerCardProps> = ({ player, index, colors, onPr
                   : colors.text,
               },
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {player.name}
           </Text>
@@ -182,7 +189,13 @@ const PlayerCardDeck: React.FC<PlayerCardProps> = ({ player, index, colors, onPr
 export default function PassAndPlayScreen() {
   const navigation = useNavigation<PassAndPlayScreenNavigationProp>();
   const { colors } = useTheme();
-  const { players, settings, setPlayers } = useGame();
+  const { t } = useLanguage();
+  const { triggerImpact, triggerNotification } = useHaptics();
+  const route = useRoute<RouteProp<RootStackParamList, 'PassAndPlay'>>();
+  const nextRound = route.params?.nextRound;
+  const { players: contextPlayers, settings: contextSettings, setPlayers, setSettings } = useGame();
+  const players = nextRound?.players ?? contextPlayers;
+  const settings = nextRound?.settings ?? contextSettings;
   const [customCategories, setCustomCategories] = useState<any[]>([]);
 
   const [viewMode, setViewMode] = useState<ViewMode>('deck');
@@ -203,13 +216,22 @@ export default function PassAndPlayScreen() {
     opacity: deckOpacity.value,
   }));
 
+  // When arriving with nextRound (Play Again), apply to context after mount so Reveal screen never re-renders with new data
+  useEffect(() => {
+    if (nextRound) {
+      setPlayers(nextRound.players);
+      setSettings(nextRound.settings);
+      navigation.setParams({ nextRound: undefined });
+    }
+  }, [nextRound]);
+
   useEffect(() => {
     if (settings && players.length > 0) {
       loadCustomCategories();
       // Entrance animation
       deckScale.value = withDelay(200, withSpring(1, { damping: 15, stiffness: 150 }));
       deckOpacity.value = withDelay(200, withTiming(1, { duration: 400 }));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerNotification(Haptics.NotificationFeedbackType.Success);
     }
   }, [settings, players.length, loadCustomCategories, deckScale, deckOpacity]);
 
@@ -223,7 +245,7 @@ export default function PassAndPlayScreen() {
   const handlePlayerCardPress = (player: Player) => {
     if (player.hasSeenCard) return;
     
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerImpact(Haptics.ImpactFeedbackStyle.Medium);
     
     // First tap: select player and transition to their view
     setSelectedPlayer(player);
@@ -234,7 +256,7 @@ export default function PassAndPlayScreen() {
   const handleRevealTap = () => {
     if (!selectedPlayer || revealed || selectedPlayer.hasSeenCard) return;
     
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerNotification(Haptics.NotificationFeedbackType.Success);
     setRevealed(true);
 
     // Mark player as seen
@@ -247,7 +269,7 @@ export default function PassAndPlayScreen() {
   };
 
   const handleBackToDeck = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerImpact(Haptics.ImpactFeedbackStyle.Light);
     setViewMode('deck');
     setSelectedPlayer(null);
     setRevealed(false);
@@ -255,20 +277,35 @@ export default function PassAndPlayScreen() {
 
   const handleContinue = () => {
     if (allPlayersSeen) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerNotification(Haptics.NotificationFeedbackType.Success);
       navigation.navigate('RoundInstructions');
     }
   };
 
   const cueWordFontSize = getResponsiveCueWordFontSize();
-  const cueWordMinScale = getResponsiveCueWordMinimumScale();
+  const splitPhraseFontSize = getResponsiveSplitPhraseFontSize();
+  const cardFontSizes = {
+    category: getResponsiveFontSize(14, 13),
+    wordPrefix: getResponsiveFontSize(16, 14),
+    wordTranslation: getResponsiveFontSize(15, 14),
+    wordStory: getResponsiveFontSize(14, 13),
+    quizLabel: getResponsiveFontSize(12, 11),
+    quizText: getResponsiveFontSize(16, 14),
+    instruction: getResponsiveFontSize(14, 13),
+    roleLabel: getResponsiveFontSize(36, 32),
+  };
 
   const getCardContent = (player: Player) => {
     const allCategories = [...defaultCategories, ...customCategories];
     const categoryName = getCategoryName(settings.secretCategory, allCategories);
-    // Show category for all players, except imposters when blind imposter mode is enabled
     const shouldShowCategory = !(player.role === 'imposter' && settings.specialModes.blindImposter);
     const isQuizMode = settings.mode === 'quiz' && settings.quizQuestion;
+    const { firstPart: wordFirstPart, secondPart: wordSecondPart, mainLines: wordMainLines, partFontSize: wordPartFontSize } = getWordDisplayParts(settings.secretWord, cueWordFontSize, splitPhraseFontSize);
+    const wordMinScale = WORD_DISPLAY.WORD_MIN_SCALE;
+    // Short words: never shrink (adjustsFontSizeToFit can over-shrink on some devices)
+    const isShortWord = !wordSecondPart && wordFirstPart.length <= 14;
+    const isQuranStories = settings.secretCategory === 'quran-stories';
+    const quranStoryBrief = isQuranStories ? getQuranStoryBrief(settings.secretWord) : null;
     
     if (player.role === 'imposter') {
       const otherImposters = players.filter(p => p.role === 'imposter' && p.id !== player.id);
@@ -276,42 +313,42 @@ export default function PassAndPlayScreen() {
         <>
           {isQuizMode && (
             <View style={[styles.quizQuestionCard, { backgroundColor: colors.accentLight + '30', borderColor: colors.accent }]}>
-              <Text style={[styles.quizQuestionLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.quizQuestionLabel, { color: colors.textSecondary, fontSize: cardFontSizes.quizLabel }]}>
                 Question:
               </Text>
-              <Text style={[styles.quizQuestionText, { color: colors.accent }]}>
+              <Text style={[styles.quizQuestionText, { color: colors.accent, fontSize: cardFontSizes.quizText }]}>
                 {settings.quizQuestion}
               </Text>
             </View>
           )}
           {shouldShowCategory && (
-            <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>
+            <Text style={[styles.categoryLabel, { color: colors.textSecondary, fontSize: cardFontSizes.category }]}>
               Category: {categoryName}
             </Text>
           )}
-          <Text style={[styles.wordPrefix, { color: colors.textSecondary }]}>
+          <Text style={[styles.wordPrefix, { color: colors.textSecondary, fontSize: cardFontSizes.wordPrefix }]}>
             {isQuizMode ? 'The answer is...' : 'The word is...'}
           </Text>
-          <Text style={[styles.roleLabel, { color: colors.imposter }]}>
+          <Text style={[styles.roleLabel, { color: colors.imposter, fontSize: cardFontSizes.roleLabel }]}>
             IMPOSTER
           </Text>
           {otherImposters.length > 0 && (
             <Text
-              style={[styles.instructionText, { color: colors.imposter, marginTop: 8, fontWeight: '600' }]}
+              style={[styles.instructionText, { color: colors.imposter, marginTop: 8, fontWeight: '600', fontSize: cardFontSizes.instruction }]}
             >
               Your fellow imposters: {otherImposters.map(p => p.name).join(', ')}
             </Text>
           )}
           {settings.specialModes.blindImposter && (
             <Text
-              style={[styles.instructionText, { color: colors.textSecondary }]}
+              style={[styles.instructionText, { color: colors.textSecondary, fontSize: cardFontSizes.instruction }]}
             >
               {isQuizMode ? 'You do not know the answer' : 'You do not know the word'}
             </Text>
           )}
           {isQuizMode && !settings.specialModes.blindImposter && (
             <Text
-              style={[styles.instructionText, { color: colors.textSecondary }]}
+              style={[styles.instructionText, { color: colors.textSecondary, fontSize: cardFontSizes.instruction }]}
             >
               You do not know the answer to the question
             </Text>
@@ -325,44 +362,65 @@ export default function PassAndPlayScreen() {
         <>
           {isQuizMode && settings.quizQuestion && (
             <View style={[styles.quizQuestionCard, { backgroundColor: colors.accentLight + '30', borderColor: colors.accent }]}>
-              <Text style={[styles.quizQuestionLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.quizQuestionLabel, { color: colors.textSecondary, fontSize: cardFontSizes.quizLabel }]}>
                 Question:
               </Text>
-              <Text style={[styles.quizQuestionText, { color: colors.accent }]}>
+              <Text style={[styles.quizQuestionText, { color: colors.accent, fontSize: cardFontSizes.quizText }]}>
                 {settings.quizQuestion}
               </Text>
             </View>
           )}
           {shouldShowCategory && (
-            <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>
+            <Text style={[styles.categoryLabel, { color: colors.textSecondary, fontSize: cardFontSizes.category }]}>
               Category: {categoryName}
             </Text>
           )}
-          <Text style={[styles.roleLabel, { color: colors.doubleAgent }]}>
+          <Text style={[styles.roleLabel, { color: colors.doubleAgent, fontSize: cardFontSizes.roleLabel }]}>
             DOUBLE AGENT
           </Text>
-          <Text style={[styles.wordPrefix, { color: colors.textSecondary }]}>
+          <Text style={[styles.wordPrefix, { color: colors.textSecondary, fontSize: cardFontSizes.wordPrefix }]}>
             {isQuizMode ? 'The answer is...' : 'The word is...'}
           </Text>
-          <Text 
-            style={[styles.wordText, { color: colors.text, fontSize: cueWordFontSize }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit={true}
-            minimumFontScale={cueWordMinScale}
-          >
-            {settings.secretWord}
-          </Text>
+          <View style={styles.wordBlock}>
+            <Text
+              style={[styles.wordText, { color: colors.text, fontSize: wordPartFontSize }]}
+              numberOfLines={wordMainLines}
+              adjustsFontSizeToFit={!isShortWord}
+              minimumFontScale={isShortWord ? 1 : wordMinScale}
+              allowFontScaling={false}
+            >
+              {wordFirstPart}
+            </Text>
+            {wordSecondPart ? (
+              <Text
+                style={[styles.wordText, styles.wordSuffix, { color: colors.text, fontSize: wordPartFontSize }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={wordMinScale}
+                allowFontScaling={false}
+              >
+                {wordSecondPart}
+              </Text>
+            ) : null}
+          </View>
 {getEnglishTranslation(settings.secretWord) && (
           <View style={styles.wordTranslationContainer}>
             <Text
-              style={[styles.wordTranslation, { color: colors.textSecondary }]}
+              style={[styles.wordTranslation, { color: colors.textSecondary, fontSize: cardFontSizes.wordTranslation }]}
             >
               {getEnglishTranslation(settings.secretWord)}
             </Text>
           </View>
         )}
+          {quranStoryBrief && (
+            <View style={styles.wordStoryDescriptionContainer}>
+              <Text style={[styles.wordStoryDescription, { color: colors.textSecondary, fontSize: cardFontSizes.wordStory }]}>
+                {quranStoryBrief}
+              </Text>
+            </View>
+          )}
           <Text
-            style={[styles.instructionText, { color: colors.textSecondary }]}
+            style={[styles.instructionText, { color: colors.textSecondary, fontSize: cardFontSizes.instruction }]}
           >
             You know the {isQuizMode ? 'answer' : 'word'} but are NOT the imposter
           </Text>
@@ -374,36 +432,57 @@ export default function PassAndPlayScreen() {
       <>
         {isQuizMode && settings.quizQuestion && (
           <View style={[styles.quizQuestionCard, { backgroundColor: colors.accentLight + '30', borderColor: colors.accent }]}>
-            <Text style={[styles.quizQuestionLabel, { color: colors.textSecondary }]}>
+            <Text style={[styles.quizQuestionLabel, { color: colors.textSecondary, fontSize: cardFontSizes.quizLabel }]}>
               Question:
             </Text>
-            <Text style={[styles.quizQuestionText, { color: colors.accent }]}>
+            <Text style={[styles.quizQuestionText, { color: colors.accent, fontSize: cardFontSizes.quizText }]}>
               {settings.quizQuestion}
             </Text>
           </View>
         )}
         {shouldShowCategory && (
-          <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.categoryLabel, { color: colors.textSecondary, fontSize: cardFontSizes.category }]}>
             Category: {categoryName}
           </Text>
         )}
-        <Text style={[styles.wordPrefix, { color: colors.textSecondary }]}>
+        <Text style={[styles.wordPrefix, { color: colors.textSecondary, fontSize: cardFontSizes.wordPrefix }]}>
           {isQuizMode ? 'The answer is...' : 'The word is...'}
         </Text>
-        <Text 
-          style={[styles.wordText, { color: colors.text, fontSize: cueWordFontSize }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit={true}
-          minimumFontScale={cueWordMinScale}
-        >
-          {settings.secretWord}
-        </Text>
+        <View style={styles.wordBlock}>
+          <Text
+            style={[styles.wordText, { color: colors.text, fontSize: wordPartFontSize }]}
+            numberOfLines={wordMainLines}
+            adjustsFontSizeToFit={!isShortWord}
+            minimumFontScale={isShortWord ? 1 : wordMinScale}
+            allowFontScaling={false}
+          >
+            {wordFirstPart}
+          </Text>
+          {wordSecondPart ? (
+            <Text
+              style={[styles.wordText, styles.wordSuffix, { color: colors.text, fontSize: wordPartFontSize }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={wordMinScale}
+              allowFontScaling={false}
+            >
+              {wordSecondPart}
+            </Text>
+          ) : null}
+        </View>
         {getEnglishTranslation(settings.secretWord) && (
           <View style={styles.wordTranslationContainer}>
             <Text
-              style={[styles.wordTranslation, { color: colors.textSecondary }]}
+              style={[styles.wordTranslation, { color: colors.textSecondary, fontSize: cardFontSizes.wordTranslation }]}
             >
               {getEnglishTranslation(settings.secretWord)}
+            </Text>
+          </View>
+        )}
+        {quranStoryBrief && (
+          <View style={styles.wordStoryDescriptionContainer}>
+            <Text style={[styles.wordStoryDescription, { color: colors.textSecondary, fontSize: cardFontSizes.wordStory }]}>
+              {quranStoryBrief}
             </Text>
           </View>
         )}
@@ -422,17 +501,36 @@ export default function PassAndPlayScreen() {
         <NavigationHeader showGetStarted={false} showSettings={false} />
 
         <View style={styles.content}>
+          <View style={styles.deckTopBar}>
+            <Pressable
+              onPress={() => {
+                triggerImpact(Haptics.ImpactFeedbackStyle.Light);
+                showAlert({
+                  title: t('common.leaveGame'),
+                  message: t('common.leaveGameConfirm'),
+                  buttons: [
+                    { text: t('common.leaveConfirmCancel'), style: 'cancel' },
+                    { text: t('common.leaveConfirmLeave'), style: 'destructive', onPress: () => navigation.navigate('GameSetup') },
+                  ],
+                });
+              }}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text style={[styles.backButton, { color: colors.accent }]}>{t('common.back')}</Text>
+            </Pressable>
+          </View>
           <View style={styles.header}>
             <Animated.View style={deckAnimatedStyle}>
               <Text
                 style={[styles.title, { color: colors.text }]}
               >
-                Select Your Card
+                {t('game.selectYourCard')}
               </Text>
               <Text
                 style={[styles.progressText, { color: colors.textSecondary }]}
               >
-                {remainingCount} {remainingCount === 1 ? 'card' : 'cards'} remaining
+                {(remainingCount === 1 ? t('game.cardsRemaining') : t('game.cardsRemaining_other')).replace('{{count}}', String(remainingCount))}
               </Text>
             </Animated.View>
           </View>
@@ -464,7 +562,7 @@ export default function PassAndPlayScreen() {
               style={styles.buttonContainer}
             >
               <Button
-                title={remainingCount === 0 ? "Continue to Round Start!" : "Continue to Round"}
+                title={remainingCount === 0 ? t('game.continueToRoundStart') : t('game.continueToRound')}
                 onPress={handleContinue}
                 style={styles.button}
               />
@@ -485,7 +583,12 @@ export default function PassAndPlayScreen() {
         <PatternBackground />
         <NavigationHeader showGetStarted={false} showSettings={false} />
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.playerScrollView}
+          contentContainerStyle={styles.playerScrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.cardContainer}>
             <Pressable
               onPress={handleRevealTap}
@@ -506,7 +609,7 @@ export default function PassAndPlayScreen() {
                       entering={FadeIn.delay(50).springify()}
                       style={styles.logoContainer}
                     >
-                      <NameLogo width={120} height={120} />
+                      <NameLogo width={96} height={96} />
                     </Animated.View>
                     <Animated.View
                       entering={FadeIn.delay(100).springify()}
@@ -541,14 +644,14 @@ export default function PassAndPlayScreen() {
                 style={styles.backToDeckContainer}
               >
                 <Button
-                  title="Back to Deck"
+                  title={t('game.backToDeck')}
                   onPress={handleBackToDeck}
                   style={styles.backToDeckButton}
                 />
-              </Animated.View>
-            )}
+            </Animated.View>
+          )}
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -564,11 +667,28 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.lg,
   },
+  playerScrollView: {
+    flex: 1,
+  },
+  playerScrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl + 96,
+  },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     marginBottom: 0,
+  },
+  deckTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   header: {
     alignItems: 'center',
@@ -754,7 +874,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    minHeight: 360,
   },
   cardPressable: {
     width: '100%',
@@ -769,7 +891,7 @@ const styles = StyleSheet.create({
   playerNameOnCard: {
     width: '100%',
     marginTop: spacing.xs / 2,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     paddingTop: spacing.xs / 4,
     paddingBottom: spacing.xs / 2,
     borderBottomWidth: 1,
@@ -790,9 +912,10 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
   },
   tapHint: {
     marginTop: spacing.xl,
@@ -838,20 +961,30 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     lineHeight: 22,
   },
+  wordBlock: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   wordText: {
     ...typography.heading,
-    fontSize: 56,
+    fontSize: 72,
     textAlign: 'center',
     fontWeight: '700',
     letterSpacing: 2,
-    lineHeight: 64,
-    marginVertical: spacing.md,
+    lineHeight: 84,
+    marginVertical: spacing.sm,
+  },
+  wordSuffix: {
+    marginTop: spacing.xs,
+    marginBottom: 0,
   },
   wordTranslationContainer: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
+    marginBottom: spacing.xs,
     paddingHorizontal: spacing.lg,
   },
   wordTranslation: {
@@ -861,8 +994,24 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     fontStyle: 'italic',
     fontWeight: '500',
-    lineHeight: 22,
+    lineHeight: 24,
     maxWidth: '100%',
+    paddingHorizontal: spacing.sm,
+  },
+  wordStoryDescriptionContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.lg,
+  },
+  wordStoryDescription: {
+    ...typography.caption,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: '100%',
+    paddingHorizontal: spacing.sm,
   },
   categoryText: {
     ...typography.body,
@@ -911,7 +1060,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   backToDeckContainer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xl + spacing.lg,
     width: '100%',
     maxWidth: 350,
   },

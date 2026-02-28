@@ -16,6 +16,7 @@ import { RootStackParamList } from '../App';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import { saveCustomCategory } from '../utils/storage';
@@ -31,11 +32,12 @@ type CreateCategoryScreenNavigationProp = StackNavigationProp<
 export default function CreateCategoryScreen() {
   const navigation = useNavigation<CreateCategoryScreenNavigationProp>();
   const { colors } = useTheme();
-  
+  const { t } = useLanguage();
   const [categoryName, setCategoryName] = useState('');
   const [description, setDescription] = useState('');
   const [words, setWords] = useState<string[]>(['']);
   const [isSaving, setIsSaving] = useState(false);
+  const hasNoWordsYet = words.length === 1 && !words[0].trim();
 
   const addWordField = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -185,7 +187,11 @@ export default function CreateCategoryScreen() {
                   Words (Minimum 3) *
                 </Text>
               </View>
-              
+              {hasNoWordsYet && (
+                <Text style={[styles.emptyWordsHint, { color: colors.textSecondary }]}>
+                  {t('createCategory.noWordsYet')}
+                </Text>
+              )}
               {words.map((word, index) => (
                 <View key={index} style={styles.wordRow}>
                   <TextInput
@@ -234,7 +240,7 @@ export default function CreateCategoryScreen() {
                 ]}
               >
                 <Text style={[styles.addButtonText, { color: colors.accent }]}>
-                  + Add Word
+                  {t('createCategory.addWord')}
                 </Text>
               </Pressable>
             </View>
@@ -290,21 +296,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: spacing.sm,
   },
+  emptyWordsHint: {
+    ...typography.body,
+    fontSize: 14,
+    marginBottom: spacing.sm,
+    fontStyle: 'italic',
+  },
   input: {
     ...typography.body,
     borderWidth: 2,
     borderRadius: 12,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
     fontSize: 16,
+    height: 48,
+    lineHeight: 20,
   },
   textArea: {
     ...typography.body,
     borderWidth: 2,
     borderRadius: 12,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
     fontSize: 16,
     minHeight: 80,
     textAlignVertical: 'top',
+    lineHeight: 20,
   },
   wordsHeader: {
     marginBottom: spacing.sm,
@@ -319,8 +336,11 @@ const styles = StyleSheet.create({
     ...typography.body,
     borderWidth: 2,
     borderRadius: 12,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
     fontSize: 16,
+    height: 48,
+    lineHeight: 20,
     flex: 1,
   },
   removeButton: {

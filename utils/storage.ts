@@ -1,12 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppSettings, Category } from '../types';
+import { AppSettings, Category, CustomPlaylist } from '../types';
 
 const STORAGE_KEYS = {
   SETTINGS: '@khafi:settings',
   UNLOCKED_CATEGORIES: '@khafi:unlocked',
   CUSTOM_CATEGORIES: '@khafi:custom',
+  CUSTOM_PLAYLISTS: '@khafi:playlists',
   USED_WORDS: '@khafi:used_words',
   GAME_RESULTS: '@khafi:game_results',
+  PLAYER_NAMES: '@khafi:playerNames',
+  HAS_SEEN_ONBOARDING: '@khafi:hasSeenOnboarding',
 };
 
 export const saveSettings = async (settings: Partial<AppSettings>): Promise<void> => {
@@ -24,6 +27,9 @@ const defaultSettings: AppSettings = {
   locale: 'en',
   unlockedCategories: [],
   customCategories: [],
+  debugMode: false,
+  hapticsEnabled: true,
+  soundEnabled: true,
 };
 
 export const getSettings = async (): Promise<AppSettings> => {
@@ -69,6 +75,39 @@ export const deleteCustomCategory = async (categoryId: string): Promise<void> =>
     await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(updated));
   } catch (error) {
     console.error('Error deleting custom category:', error);
+  }
+};
+
+export const getCustomPlaylists = async (): Promise<CustomPlaylist[]> => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.CUSTOM_PLAYLISTS);
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading custom playlists:', error);
+  }
+  return [];
+};
+
+export const saveCustomPlaylist = async (playlist: CustomPlaylist): Promise<void> => {
+  try {
+    const list = await getCustomPlaylists();
+    const updated = list.filter(p => p.id !== playlist.id);
+    updated.push(playlist);
+    await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_PLAYLISTS, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Error saving custom playlist:', error);
+  }
+};
+
+export const deleteCustomPlaylist = async (playlistId: string): Promise<void> => {
+  try {
+    const list = await getCustomPlaylists();
+    const updated = list.filter(p => p.id !== playlistId);
+    await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_PLAYLISTS, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Error deleting custom playlist:', error);
   }
 };
 
@@ -174,8 +213,12 @@ export interface GameResult {
   numPlayers: number;
   numImposters: number;
   mode: 'word' | 'question' | 'quiz';
-  imposterNames?: string[];   // Names of imposters for display on stats
-  winnerNames?: string[];     // Names of winning team (normal players when players won, imposters when imposters won)
+  imposterNames?: string[];
+  winnerNames?: string[];
+  /** True if this round used Blind Imposter mode */
+  usedBlindImposter?: boolean;
+  /** True if this round used Double Agent mode */
+  usedDoubleAgent?: boolean;
 }
 
 export const saveGameResult = async (result: GameResult): Promise<void> => {
@@ -205,5 +248,30 @@ export const clearGameResults = async (): Promise<void> => {
     await AsyncStorage.removeItem(STORAGE_KEYS.GAME_RESULTS);
   } catch (error) {
     console.error('Error clearing game results:', error);
+  }
+};
+
+export const getHasSeenOnboarding = async (): Promise<boolean> => {
+  try {
+    const v = await AsyncStorage.getItem(STORAGE_KEYS.HAS_SEEN_ONBOARDING);
+    return v === 'true';
+  } catch {
+    return false;
+  }
+};
+
+export const setHasSeenOnboarding = async (): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.HAS_SEEN_ONBOARDING, 'true');
+  } catch (error) {
+    console.error('Error saving onboarding flag:', error);
+  }
+};
+
+export const clearHasSeenOnboarding = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.HAS_SEEN_ONBOARDING);
+  } catch (error) {
+    console.error('Error clearing onboarding flag:', error);
   }
 };
