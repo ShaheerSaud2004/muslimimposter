@@ -40,6 +40,8 @@ jobs:
           cp -r website/* dist/
           # Keep the PWA index.html as game.html for iframe
           cp dist/index.html dist/game.html
+          # Ensure version.json is deployed for app update checks (khafi.org/version.json)
+          cp public/version.json dist/version.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
