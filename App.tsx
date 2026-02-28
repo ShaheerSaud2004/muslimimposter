@@ -113,10 +113,15 @@ function AppContent() {
     return () => sub.remove();
   }, []);
 
-  const onNavigationReady = () => {
+  // Hide splash as soon as app content mounts so user goes straight to the app (no extra splash screen)
+  useEffect(() => {
     if (Platform.OS !== 'web') {
       SplashScreen.hideAsync().catch(() => {});
     }
+  }, []);
+
+  const onNavigationReady = () => {
+    // Splash already hidden on mount; this is a no-op for readiness only
   };
 
   // Blocking "Update required" screen — Khafī themed
@@ -151,14 +156,20 @@ function AppContent() {
             >
               <Text style={styles.updateBlockPrimaryButtonText}>Update</Text>
             </Pressable>
-            {simulateUpdateRequired && (
-              <Pressable
-                style={({ pressed }) => [styles.updateBlockDebugButton, pressed && { opacity: 0.7 }]}
-                onPress={() => setSimulateUpdateRequired(false)}
-              >
-                <Text style={[styles.updateBlockDebugButtonText, { color: colors.textSecondary }]}>Dismiss</Text>
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [
+                styles.updateBlockDismissButton,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => {
+                if (simulateUpdateRequired) setSimulateUpdateRequired(false);
+                else setUpdateRequired(null);
+              }}
+            >
+              <Text style={[styles.updateBlockDismissButtonText, { color: colors.textSecondary }]}>
+                {simulateUpdateRequired ? 'Dismiss' : 'Later'}
+              </Text>
+            </Pressable>
           </View>
         </View>
         </View>
@@ -306,11 +317,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  updateBlockDebugButton: {
+  updateBlockDismissButton: {
     marginTop: 12,
     paddingVertical: 8,
   },
-  updateBlockDebugButtonText: {
+  updateBlockDismissButtonText: {
     fontSize: 15,
   },
 });

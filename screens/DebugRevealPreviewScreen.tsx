@@ -18,8 +18,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
-import { getResponsiveCueWordFontSize, getResponsiveSplitPhraseFontSize } from '../utils/responsive';
-import { getWordDisplayParts, WORD_DISPLAY } from '../utils/wordDisplay';
+import { getResponsiveFontSize, getMinCardTextSize } from '../utils/responsive';
+import { getWordDisplayParts } from '../utils/wordDisplay';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories } from '../utils/storage';
 import { getEnglishTranslation } from '../utils/translations';
@@ -65,12 +65,17 @@ export default function DebugRevealPreviewScreen() {
   }, [loadWords]);
 
   const current = words[index];
-  const cueWordFontSize = getResponsiveCueWordFontSize();
-  const splitPhraseFontSize = getResponsiveSplitPhraseFontSize();
   const wordParts = current
-    ? getWordDisplayParts(current.word, cueWordFontSize, splitPhraseFontSize)
-    : { firstPart: '', secondPart: null, mainLines: 1, partFontSize: cueWordFontSize };
-  const wordMinScale = WORD_DISPLAY.WORD_MIN_SCALE;
+    ? getWordDisplayParts(current.word, 1, 1)
+    : { firstPart: '', secondPart: null, mainLines: 1, partFontSize: 1 };
+  const minCardTextSize = getMinCardTextSize();
+  const categoryFontSize = Math.max(getResponsiveFontSize(14), minCardTextSize);
+  const wordPrefixFontSize = Math.max(getResponsiveFontSize(16), minCardTextSize);
+  const translationFontSize = Math.max(getResponsiveFontSize(15), minCardTextSize);
+  const isSingleWord = wordParts.secondPart == null;
+  const allWords = current ? current.word.trim().split(/\s+/).filter(Boolean) : [];
+  // Each word = same size as category, just a bit bigger; works on all screens
+  const wordFontSize = Math.max(categoryFontSize + 6, getResponsiveFontSize(19), minCardTextSize);
 
   const goPrev = () => {
     if (index <= 0) return;
@@ -142,38 +147,39 @@ export default function DebugRevealPreviewScreen() {
             <PlayingCard isRevealed playerName="Preview">
               <View style={styles.cardContent}>
                 <View style={styles.logoContainer}>
-                  <NameLogo width={120} height={120} />
+                  <NameLogo width={96} height={96} />
                 </View>
-                <Text style={[styles.playerNameOnCardText, { color: colors.text }]}>Preview</Text>
-                <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>
+                <Text style={[styles.playerNameOnCardText, { color: colors.text, fontSize: getResponsiveFontSize(24) }]}>Preview</Text>
+                <Text style={[styles.categoryLabel, { color: colors.textSecondary, fontSize: categoryFontSize }]}>
                   Category: {current.categoryName}
                 </Text>
-                <Text style={[styles.wordPrefix, { color: colors.textSecondary }]}>The word is...</Text>
+                <Text style={[styles.wordPrefix, { color: colors.textSecondary, fontSize: wordPrefixFontSize }]}>The word is...</Text>
                 <View style={styles.wordBlock}>
-                  <Text
-                    style={[styles.wordText, { color: colors.text, fontSize: wordParts.partFontSize }]}
-                    numberOfLines={wordParts.mainLines}
-                    adjustsFontSizeToFit
-                    minimumFontScale={wordMinScale}
-                    allowFontScaling={false}
-                  >
-                    {wordParts.firstPart}
-                  </Text>
-                  {wordParts.secondPart ? (
-                    <Text
-                      style={[styles.wordText, styles.wordSuffix, { color: colors.text, fontSize: wordParts.partFontSize }]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={wordMinScale}
-                      allowFontScaling={false}
-                    >
-                      {wordParts.secondPart}
-                    </Text>
-                  ) : null}
+                  {isSingleWord ? (
+                    <View style={styles.wordSingleWrap}>
+                      <Text
+                        style={[styles.wordText, { color: colors.text, fontSize: wordFontSize }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                        allowFontScaling={false}
+                      >
+                        {wordParts.firstPart}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.wordRow}>
+                      {allWords.map((w, i) => (
+                        <Text key={i} style={[styles.wordText, styles.wordChunk, styles.phraseChunk, { color: colors.text, fontSize: wordFontSize, lineHeight: Math.round(wordFontSize * 1.3) }]} numberOfLines={1} allowFontScaling={false}>
+                          {w}{i < allWords.length - 1 ? ' ' : ''}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
                 </View>
                 {getEnglishTranslation(current.word) && (
                   <View style={styles.wordTranslationContainer}>
-                    <Text style={[styles.wordTranslation, { color: colors.textSecondary }]}>
+                    <Text style={[styles.wordTranslation, { color: colors.textSecondary, fontSize: translationFontSize }]}>
                       {getEnglishTranslation(current.word)}
                     </Text>
                   </View>
@@ -260,8 +266,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl + spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
     gap: spacing.md,
   },
   logoContainer: {
@@ -295,7 +301,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     opacity: 0.75,
     fontStyle: 'italic',
     fontWeight: '500',
@@ -306,15 +312,35 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  wordSingleWrap: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+    marginTop: spacing.xs,
+  },
+  wordRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 2,
+    width: '100%',
+    maxWidth: '100%',
+  },
+  wordChunk: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  phraseChunk: {
+    marginVertical: 0,
   },
   wordText: {
     ...typography.heading,
-    fontSize: 72,
     textAlign: 'center',
     fontWeight: '700',
-    letterSpacing: 2,
-    lineHeight: 84,
-    marginVertical: spacing.sm,
+    letterSpacing: 1,
   },
   wordSuffix: {
     marginTop: spacing.xs,
@@ -324,10 +350,10 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   wordTranslation: {
     ...typography.caption,

@@ -822,8 +822,8 @@ const styles = StyleSheet.create({
   },
   settingSwitchWrap: {
     marginLeft: spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 2,
   },
   settingIconWrap: {
     width: 44, // iOS accessibility minimum

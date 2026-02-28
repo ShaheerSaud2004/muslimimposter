@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, ScrollView } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -229,9 +229,14 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
           <View style={[styles.revealedBorderLine, styles.revealedBorderLeft, { backgroundColor: colors.border, opacity: 0.25 }]} />
           <View style={[styles.revealedBorderLine, styles.revealedBorderRight, { backgroundColor: colors.border, opacity: 0.25 }]} />
         </View>
-        <View style={styles.revealedContentContainer}>
+        <ScrollView
+          style={styles.revealedContentContainer}
+          contentContainerStyle={styles.revealedContentScroll}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
           {children}
-        </View>
+        </ScrollView>
       </Animated.View>
     </Animated.View>
   );
@@ -499,10 +504,15 @@ const styles = StyleSheet.create({
   revealedContentContainer: {
     flex: 1,
     width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
     zIndex: 1,
-    overflow: 'visible',
+  },
+  revealedContentScroll: {
+    flexGrow: 1,
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xl,
   },
   revealedBorderLine: {
     position: 'absolute',

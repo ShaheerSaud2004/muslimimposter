@@ -32,17 +32,16 @@ import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { getCategoryName } from '../utils/game';
-import { getResponsiveCueWordFontSize, getResponsiveSplitPhraseFontSize, getResponsiveFontSize } from '../utils/responsive';
+import { getResponsiveFontSize, getMinCardTextSize } from '../utils/responsive';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories } from '../utils/storage';
 import { getEnglishTranslation } from '../utils/translations';
-import { getQuranStoryBrief } from '../data/quranStoryDescriptions';
 import { Player } from '../types';
 import { NavigationHeader } from '../components/NavigationHeader';
 import { showAlert } from '../components/Alert';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useHaptics } from '../contexts/HapticsContext';
-import { getWordDisplayParts, WORD_DISPLAY } from '../utils/wordDisplay';
+import { getWordDisplayParts } from '../utils/wordDisplay';
 
 type PassAndPlayScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -282,17 +281,18 @@ export default function PassAndPlayScreen() {
     }
   };
 
-  const cueWordFontSize = getResponsiveCueWordFontSize();
-  const splitPhraseFontSize = getResponsiveSplitPhraseFontSize();
+  const minCardTextSize = getMinCardTextSize();
+  const categorySize = Math.max(getResponsiveFontSize(14, 13), minCardTextSize);
   const cardFontSizes = {
-    category: getResponsiveFontSize(14, 13),
-    wordPrefix: getResponsiveFontSize(16, 14),
-    wordTranslation: getResponsiveFontSize(15, 14),
-    wordStory: getResponsiveFontSize(14, 13),
-    quizLabel: getResponsiveFontSize(12, 11),
-    quizText: getResponsiveFontSize(16, 14),
-    instruction: getResponsiveFontSize(14, 13),
-    roleLabel: getResponsiveFontSize(36, 32),
+    category: categorySize,
+    wordPrefix: Math.max(getResponsiveFontSize(16, 14), minCardTextSize),
+    wordTranslation: Math.max(getResponsiveFontSize(15, 14), minCardTextSize),
+    quizLabel: Math.max(getResponsiveFontSize(12, 11), minCardTextSize),
+    quizText: Math.max(getResponsiveFontSize(16, 14), minCardTextSize),
+    instruction: Math.max(getResponsiveFontSize(14, 13), minCardTextSize),
+    roleLabel: Math.max(getResponsiveFontSize(36, 32), minCardTextSize),
+    // Each word on card = same size as category, just a bit bigger; works on all screens
+    word: Math.max(categorySize + 6, getResponsiveFontSize(19), minCardTextSize),
   };
 
   const getCardContent = (player: Player) => {
@@ -300,13 +300,11 @@ export default function PassAndPlayScreen() {
     const categoryName = getCategoryName(settings.secretCategory, allCategories);
     const shouldShowCategory = !(player.role === 'imposter' && settings.specialModes.blindImposter);
     const isQuizMode = settings.mode === 'quiz' && settings.quizQuestion;
-    const { firstPart: wordFirstPart, secondPart: wordSecondPart, mainLines: wordMainLines, partFontSize: wordPartFontSize } = getWordDisplayParts(settings.secretWord, cueWordFontSize, splitPhraseFontSize);
-    const wordMinScale = WORD_DISPLAY.WORD_MIN_SCALE;
-    // Short words: never shrink (adjustsFontSizeToFit can over-shrink on some devices)
-    const isShortWord = !wordSecondPart && wordFirstPart.length <= 14;
-    const isQuranStories = settings.secretCategory === 'quran-stories';
-    const quranStoryBrief = isQuranStories ? getQuranStoryBrief(settings.secretWord) : null;
-    
+    const { firstPart: wordFirstPart, secondPart: wordSecondPart } = getWordDisplayParts(settings.secretWord, 1, 1);
+    const isSingleWord = wordSecondPart == null;
+    const allWords = settings.secretWord.trim().split(/\s+/).filter(Boolean);
+    const showTranslation = allWords.length <= 2 && getEnglishTranslation(settings.secretWord);
+
     if (player.role === 'imposter') {
       const otherImposters = players.filter(p => p.role === 'imposter' && p.id !== player.id);
       return (
@@ -382,43 +380,39 @@ export default function PassAndPlayScreen() {
             {isQuizMode ? 'The answer is...' : 'The word is...'}
           </Text>
           <View style={styles.wordBlock}>
-            <Text
-              style={[styles.wordText, { color: colors.text, fontSize: wordPartFontSize }]}
-              numberOfLines={wordMainLines}
-              adjustsFontSizeToFit={!isShortWord}
-              minimumFontScale={isShortWord ? 1 : wordMinScale}
-              allowFontScaling={false}
-            >
-              {wordFirstPart}
-            </Text>
-            {wordSecondPart ? (
-              <Text
-                style={[styles.wordText, styles.wordSuffix, { color: colors.text, fontSize: wordPartFontSize }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={wordMinScale}
-                allowFontScaling={false}
-              >
-                {wordSecondPart}
-              </Text>
-            ) : null}
+            {isSingleWord ? (
+              <View style={styles.wordSingleWrap}>
+                <Text
+                  style={[styles.wordText, { color: colors.text, fontSize: cardFontSizes.word }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  allowFontScaling={false}
+                >
+                  {wordFirstPart}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.wordRow}>
+                {allWords.map((w, i) => (
+                  <Text key={i} style={[styles.wordText, styles.wordChunk, styles.phraseChunk, { color: colors.text, fontSize: cardFontSizes.word, lineHeight: Math.round(cardFontSizes.word * 1.3) }]} numberOfLines={1} allowFontScaling={false}>
+                    {w}{i < allWords.length - 1 ? ' ' : ''}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
-{getEnglishTranslation(settings.secretWord) && (
+{showTranslation && (
           <View style={styles.wordTranslationContainer}>
             <Text
               style={[styles.wordTranslation, { color: colors.textSecondary, fontSize: cardFontSizes.wordTranslation }]}
+              numberOfLines={3}
+              ellipsizeMode="tail"
             >
               {getEnglishTranslation(settings.secretWord)}
             </Text>
           </View>
         )}
-          {quranStoryBrief && (
-            <View style={styles.wordStoryDescriptionContainer}>
-              <Text style={[styles.wordStoryDescription, { color: colors.textSecondary, fontSize: cardFontSizes.wordStory }]}>
-                {quranStoryBrief}
-              </Text>
-            </View>
-          )}
           <Text
             style={[styles.instructionText, { color: colors.textSecondary, fontSize: cardFontSizes.instruction }]}
           >
@@ -449,40 +443,36 @@ export default function PassAndPlayScreen() {
           {isQuizMode ? 'The answer is...' : 'The word is...'}
         </Text>
         <View style={styles.wordBlock}>
-          <Text
-            style={[styles.wordText, { color: colors.text, fontSize: wordPartFontSize }]}
-            numberOfLines={wordMainLines}
-            adjustsFontSizeToFit={!isShortWord}
-            minimumFontScale={isShortWord ? 1 : wordMinScale}
-            allowFontScaling={false}
-          >
-            {wordFirstPart}
-          </Text>
-          {wordSecondPart ? (
-            <Text
-              style={[styles.wordText, styles.wordSuffix, { color: colors.text, fontSize: wordPartFontSize }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={wordMinScale}
-              allowFontScaling={false}
-            >
-              {wordSecondPart}
-            </Text>
-          ) : null}
+          {isSingleWord ? (
+            <View style={styles.wordSingleWrap}>
+              <Text
+                style={[styles.wordText, { color: colors.text, fontSize: cardFontSizes.word }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                allowFontScaling={false}
+              >
+                {wordFirstPart}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.wordRow}>
+              {allWords.map((w, i) => (
+                <Text key={i} style={[styles.wordText, styles.wordChunk, styles.phraseChunk, { color: colors.text, fontSize: cardFontSizes.word, lineHeight: Math.round(cardFontSizes.word * 1.3) }]} numberOfLines={1} allowFontScaling={false}>
+                  {w}{i < allWords.length - 1 ? ' ' : ''}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
-        {getEnglishTranslation(settings.secretWord) && (
+        {showTranslation && (
           <View style={styles.wordTranslationContainer}>
             <Text
               style={[styles.wordTranslation, { color: colors.textSecondary, fontSize: cardFontSizes.wordTranslation }]}
+              numberOfLines={3}
+              ellipsizeMode="tail"
             >
               {getEnglishTranslation(settings.secretWord)}
-            </Text>
-          </View>
-        )}
-        {quranStoryBrief && (
-          <View style={styles.wordStoryDescriptionContainer}>
-            <Text style={[styles.wordStoryDescription, { color: colors.textSecondary, fontSize: cardFontSizes.wordStory }]}>
-              {quranStoryBrief}
             </Text>
           </View>
         )}
@@ -912,10 +902,10 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
   },
   tapHint: {
     marginTop: spacing.xl,
@@ -934,7 +924,7 @@ const styles = StyleSheet.create({
     ...typography.heading,
     fontSize: 36,
     textAlign: 'center',
-    marginVertical: spacing.lg,
+    marginVertical: spacing.md,
     fontWeight: '700',
     letterSpacing: 3,
     textTransform: 'uppercase',
@@ -954,7 +944,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     opacity: 0.75,
     fontStyle: 'italic',
     fontWeight: '500',
@@ -965,15 +955,35 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  wordSingleWrap: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+    marginTop: spacing.xs,
+  },
+  wordRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 2,
+    width: '100%',
+    maxWidth: '100%',
+  },
+  wordChunk: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  phraseChunk: {
+    marginVertical: 0,
   },
   wordText: {
     ...typography.heading,
-    fontSize: 72,
     textAlign: 'center',
     fontWeight: '700',
-    letterSpacing: 2,
-    lineHeight: 84,
-    marginVertical: spacing.sm,
+    letterSpacing: 1,
   },
   wordSuffix: {
     marginTop: spacing.xs,
@@ -995,21 +1005,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     fontWeight: '500',
     lineHeight: 24,
-    maxWidth: '100%',
-    paddingHorizontal: spacing.sm,
-  },
-  wordStoryDescriptionContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.lg,
-  },
-  wordStoryDescription: {
-    ...typography.caption,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
     maxWidth: '100%',
     paddingHorizontal: spacing.sm,
   },
