@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   Modal,
+  Image,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Constants from 'expo-constants';
@@ -531,9 +532,74 @@ export default function SettingsScreen() {
                   });
                 });
               }}
+              colors={colors}
+            />
+            <SettingRow
+              iconElement={
+                <Svg width={24} height={24} viewBox="0 -960 960 960" fill={colors.text}>
+                  <Path d="M480-320q102-92 131-129.5t29-74.5q0-36-26-62t-62-26q-21 0-40.5 8.5T480-580q-12-15-31-23.5t-41-8.5q-36 0-62 26t-26 62q0 19 5 35t22 37.5q17 21.5 48.5 52.5t84.5 79Zm0 240q-139-35-229.5-159.5T160-516v-244l320-120 320 120v244q0 152-90.5 276.5T480-80Zm0-84q104-33 172-132t68-220v-189l-240-90-240 90v189q0 121 68 220t172 132Zm0-316Z" />
+                </Svg>
+              }
+              label={t('settings.privacy')}
+              sublabel={t('settings.privacySublabel')}
+              labelFontSize={settingLabelSize}
+              sublabelFontSize={settingSublabelSize}
+              onPress={() => {
+                triggerImpact(Haptics.ImpactFeedbackStyle.Medium);
+                const privacyUrl = 'https://shaheersaud2004.github.io/push/privacy-policy.html';
+                Linking.openURL(privacyUrl).catch(() => {
+                  showAlert({
+                    title: 'Privacy Policy',
+                    message: 'Our privacy policy explains how we collect, use, and protect your data.\n\nWe do not collect, store, or share any personal data. All game data is stored locally on your device.\n\nFor the full privacy policy, visit:\nhttps://shaheersaud2004.github.io/push/privacy-policy.html',
+                  });
+                });
+              }}
               isLast
               colors={colors}
             />
+          </View>
+
+          <View style={[styles.section, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: getResponsiveFontSize(12) }]}>COLLABORATIONS</Text>
+            <View style={[styles.isdYouthCard, { borderColor: colors.border }]}>
+              <Image source={require('../assets/isd-youth-logo.jpg')} style={styles.isdYouthLogo} resizeMode="contain" />
+              <Text style={[styles.isdYouthName, { color: colors.text }]}>ISD Youth</Text>
+              <Text style={[styles.isdYouthSub, { color: colors.textSecondary }]}>Islamic Society of Delaware</Text>
+              <Text style={[styles.isdYouthTagline, { color: colors.textSecondary }]}>Youth group that's been making videos with us</Text>
+              <SettingRow
+                iconElement={
+                  <Svg width={24} height={24} viewBox="0 -960 960 960" fill={colors.text}>
+                    <Path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h240v80H320Zm200 160v-80h320q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h320q83 0 141.5 58.5T1040-480q0 83-58.5 141.5T840-280H520Z" />
+                  </Svg>
+                }
+                label="Follow on Instagram"
+                sublabel="@isdyouth"
+                labelFontSize={settingLabelSize}
+                sublabelFontSize={settingSublabelSize}
+                onPress={() => {
+                  triggerImpact(Haptics.ImpactFeedbackStyle.Light);
+                  Linking.openURL('https://www.instagram.com/isdyouth').catch(() => {});
+                }}
+                colors={colors}
+              />
+              <SettingRow
+                iconElement={
+                  <Svg width={24} height={24} viewBox="0 -960 960 960" fill={colors.text}>
+                    <Path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240v80H160v480h640v-480H560v-80h240q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-160 200-114H280l200 114Zm0-70L160-330v170h400v-170L520-400ZM280-400v240 240Z" />
+                  </Svg>
+                }
+                label="Watch our reel with them"
+                sublabel="Instagram reel"
+                labelFontSize={settingLabelSize}
+                sublabelFontSize={settingSublabelSize}
+                onPress={() => {
+                  triggerImpact(Haptics.ImpactFeedbackStyle.Light);
+                  Linking.openURL('https://www.instagram.com/reel/DVY-il9DhXj/').catch(() => {});
+                }}
+                isLast
+                colors={colors}
+              />
+            </View>
           </View>
 
           <Pressable onPress={handleFirstIterationPress}>
@@ -697,6 +763,23 @@ export default function SettingsScreen() {
               Preview screens & dev tools
             </Text>
             <Pressable
+              onPress={() => {
+                triggerImpact(Haptics.ImpactFeedbackStyle.Light);
+                setDebugMenuVisible(false);
+                navigation.navigate('Debug');
+              }}
+              style={[styles.debugModalRow, { borderColor: colors.border }]}
+            >
+              <View style={styles.debugModalIconWrap}>
+                <Text style={[styles.settingIcon, { fontSize: getResponsiveFontSize(22) }]}>📋</Text>
+              </View>
+              <View style={styles.debugModalRowText}>
+                <Text style={[styles.settingLabel, { color: colors.text, fontSize: getResponsiveFontSize(17) }]}>Open Debug screen</Text>
+                <Text style={[styles.settingSublabel, { color: colors.textSecondary, fontSize: getResponsiveFontSize(14) }]}>Full screen: every scenario (troll, reveal, etc.)</Text>
+              </View>
+              <Text style={[styles.settingArrow, { color: colors.textSecondary, fontSize: getResponsiveFontSize(24) }]}>›</Text>
+            </Pressable>
+            <Pressable
               onPress={handlePreviewCardReveal}
               style={[styles.debugModalRow, { borderColor: colors.border }]}
             >
@@ -739,6 +822,7 @@ export default function SettingsScreen() {
               </View>
               <Text style={[styles.settingArrow, { color: colors.textSecondary, fontSize: getResponsiveFontSize(24) }]}>›</Text>
             </Pressable>
+
             <Pressable
               onPress={() => { triggerImpact(Haptics.ImpactFeedbackStyle.Light); setDebugMenuVisible(false); }}
               style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1, marginTop: spacing.lg }]}
@@ -793,6 +877,42 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: spacing.xs,
     marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
+  },
+  isdYouthCard: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  isdYouthLogo: {
+    width: '100%',
+    maxWidth: 200,
+    height: 120,
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.lg,
+  },
+  isdYouthName: {
+    ...typography.heading,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+    marginHorizontal: spacing.lg,
+  },
+  isdYouthSub: {
+    ...typography.caption,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+    marginHorizontal: spacing.lg,
+  },
+  isdYouthTagline: {
+    ...typography.caption,
+    fontSize: 13,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: spacing.md,
     marginHorizontal: spacing.lg,
   },
   settingRow: {

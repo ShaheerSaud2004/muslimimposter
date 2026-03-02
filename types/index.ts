@@ -11,11 +11,14 @@ export type GameMode = 'word' | 'quiz';
 export type SpecialModes = {
   blindImposter: boolean;
   doubleAgent: boolean;
+  trollMode: boolean;
 };
 
 export type GameSettings = {
   numPlayers: number;
   numImposters: number;
+  /** User's chosen imposter count from Game Setup; used so Play Again after a troll round resets to this. */
+  userChosenNumImposters?: number;
   mode: GameMode;
   specialModes: SpecialModes;
   selectedCategories: string[];
@@ -29,6 +32,8 @@ export type GameSettings = {
   playerNames?: string[]; // Store player names for persistence
   quizQuestion?: string; // For quiz mode: the question shown to normal players
   imposterQuizQuestion?: string; // For quiz mode: the question shown to imposter
+  /** When true, this round is a troll round: everyone but one is imposter, and imposters don't see who else is imposter */
+  trollRoundActive?: boolean;
 };
 
 export type Difficulty = 'easy' | 'medium' | 'hard';

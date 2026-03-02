@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../components/Alert';
 import Svg, { Path } from 'react-native-svg';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -41,6 +41,7 @@ import {
   selectSingleRandomCategory,
   RANDOM_PLAY_EXCLUDED_CATEGORY_IDS,
   getCategoryName,
+  getTrollRoundParams,
   selectQuizQuestion,
   selectImposterQuizQuestion,
 } from '../utils/game';
@@ -69,12 +70,13 @@ export default function GameSetupScreen() {
   const [mode, setMode] = useState<GameMode>('word');
   const [blindImposter, setBlindImposter] = useState(false);
   const [doubleAgent, setDoubleAgent] = useState(false);
+  const [trollMode, setTrollMode] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showHintToImposter, setShowHintToImposter] = useState(false);
   const [customCategories, setCustomCategories] = useState<Category[]>([]);
   const [customPlaylists, setCustomPlaylists] = useState<CustomPlaylist[]>([]);
   const [modalCategory, setModalCategory] = useState<Category | null>(null);
-  const [infoModal, setInfoModal] = useState<'blind' | 'double' | 'word' | 'quiz' | null>(null);
+  const [infoModal, setInfoModal] = useState<'blind' | 'double' | 'word' | 'quiz' | 'troll' | 'hint' | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [playerNames, setPlayerNames] = useState<string[]>(['', '', '']);
   const [difficulty] = useState<Difficulty | 'all'>('all');
@@ -88,10 +90,11 @@ export default function GameSetupScreen() {
     if (hasInitializedFromContext.current || !players.length || !settings) return;
     hasInitializedFromContext.current = true;
     setNumPlayers(players.length);
-    setNumImposters(settings.numImposters);
+    setNumImposters(settings.userChosenNumImposters ?? settings.numImposters);
     setMode(settings.mode);
     setBlindImposter(settings.specialModes.blindImposter);
     setDoubleAgent(settings.specialModes.doubleAgent);
+    setTrollMode(settings.specialModes.trollMode ?? false);
     setSelectedCategories(settings.selectedCategories ?? []);
     setShowHintToImposter(settings.showHintToImposter);
     // difficulty removed from UI; always 'all'
@@ -337,17 +340,24 @@ export default function GameSetupScreen() {
     // Select random starting player ID first
     const randomPlayerIndex = Math.floor(Math.random() * numPlayers);
     const startingPlayerId = `player-${randomPlayerIndex}`;
-    
-    const players = createPlayers(numPlayers, numImposters, doubleAgent, startingPlayerId, playerNames);
+
+    const trollParams = getTrollRoundParams(numPlayers, trollMode);
+    const effectiveNumImposters = trollParams.trollRoundActive ? trollParams.numImposters : numImposters;
+    const effectiveDoubleAgent = trollParams.trollRoundActive ? trollParams.hasDoubleAgent : doubleAgent;
+
+    const players = createPlayers(numPlayers, effectiveNumImposters, effectiveDoubleAgent, startingPlayerId, playerNames);
 
     const settings: GameSettings = {
       numPlayers,
-      numImposters,
+      numImposters: effectiveNumImposters,
+      userChosenNumImposters: numImposters,
       mode,
       specialModes: {
         blindImposter,
         doubleAgent,
+        trollMode: trollMode ?? false,
       },
+      trollRoundActive: trollParams.trollRoundActive,
       selectedCategories: selectedCategories.length > 0 ? categoriesToUse : [],
       showCategoryToImposter: !blindImposter, // Show category when Blind Imposter is OFF
       showHintToImposter,
@@ -850,6 +860,120 @@ export default function GameSetupScreen() {
                   />
                 </View>
               </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setTrollMode(!trollMode);
+                }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <View style={styles.toggleLabelContainer}>
+                  <View style={styles.labelRow}>
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      Troll mode
+                    </Text>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setInfoModal('troll');
+                      }}
+                      style={styles.readMoreButtonInline}
+                    >
+                      <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                          stroke={colors.textSecondary}
+                          strokeWidth={1.5}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </Pressable>
+                  </View>
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                    ~10% chance: might make more than one imposter… or everyone. It just happens.
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.toggle,
+                    {
+                      backgroundColor: trollMode ? colors.imposter : colors.border,
+                    },
+                  ]}
+                >
+                  <Animated.View
+                    style={[
+                      styles.toggleThumb,
+                      {
+                        transform: [{ translateX: trollMode ? 20 : 0 }],
+                      },
+                    ]}
+                  />
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowHintToImposter(!showHintToImposter);
+                }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <View style={styles.toggleLabelContainer}>
+                  <View style={styles.labelRow}>
+                    <Text style={[styles.toggleLabel, { color: colors.text }]}>
+                      Show hint to imposter
+                    </Text>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setInfoModal('hint');
+                      }}
+                      style={styles.readMoreButtonInline}
+                    >
+                      <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                          stroke={colors.textSecondary}
+                          strokeWidth={1.5}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </Pressable>
+                  </View>
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                    Imposter sees a clue about the word (e.g. translation)
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.toggle,
+                    {
+                      backgroundColor: showHintToImposter ? colors.accent : colors.border,
+                    },
+                  ]}
+                >
+                  <Animated.View
+                    style={[
+                      styles.toggleThumb,
+                      {
+                        transform: [{ translateX: showHintToImposter ? 20 : 0 }],
+                      },
+                    ]}
+                  />
+                </View>
+              </Pressable>
             </View>
           </Card>
         </Animated.View>
@@ -1280,7 +1404,20 @@ export default function GameSetupScreen() {
           <PatternBackground />
           <View style={[styles.fullScreenModalContent, { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg }]}>
             <View style={styles.allCategoriesHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text, fontSize: 28, flex: 1, marginBottom: 0 }]} numberOfLines={1}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowAllCategories(false);
+                  navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Menu' }] }));
+                }}
+                style={({ pressed }) => [
+                  styles.backToMenuBtn,
+                  { backgroundColor: colors.accentLight, borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.backToMenuBtnText, { color: colors.accent }]}>← Back to menu</Text>
+              </Pressable>
+              <Text style={[styles.modalTitle, { color: colors.text, fontSize: 22, flex: 1, marginBottom: 0 }]} numberOfLines={1}>
                 All Categories
               </Text>
               <Pressable
@@ -1299,6 +1436,9 @@ export default function GameSetupScreen() {
                 <Text style={[styles.modalCloseBtnText, { color: colors.text }]}>✕</Text>
               </Pressable>
             </View>
+            <Text style={[styles.allCategoriesHint, { color: colors.textSecondary }]}>
+              Troll mode and other game options (Double Agent, Blind Imposter) are in Game Setup — scroll down below categories.
+            </Text>
             <ScrollView
               ref={allCategoriesScrollRef}
               style={styles.categoriesList}
@@ -1449,6 +1589,8 @@ export default function GameSetupScreen() {
                     {infoModal === 'double' && 'Double Agent'}
                     {infoModal === 'word' && 'Word + Clue Mode'}
                     {infoModal === 'quiz' && 'Quiz/Questions Mode'}
+                    {infoModal === 'troll' && 'Troll mode'}
+                    {infoModal === 'hint' && 'Show hint to imposter'}
                   </Text>
                   <Pressable
                     onPress={() => {
@@ -1506,6 +1648,36 @@ export default function GameSetupScreen() {
                           The Double Agent wins if they survive the voting round. If they're voted out, the normal players and imposters continue playing as usual.
                         </Text>
                       </View>
+                    </>
+                  )}
+                  {infoModal === 'troll' && (
+                    <>
+                      <View style={[styles.modalSection, { backgroundColor: colors.accentLight + '30', borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: spacing.sm, marginBottom: spacing.sm }]}>
+                        <Text style={[styles.modalDescription, { color: colors.text, fontWeight: '600', marginBottom: spacing.xs }]}>
+                          What it does:
+                        </Text>
+                        <Text style={[styles.modalDescription, { color: colors.text }]}>
+                          When enabled, there's about a 10% chance each round that the game will pick more than one imposter — or even everyone. It just happens at random.
+                        </Text>
+                      </View>
+                      <Text style={[styles.modalDescription, { color: colors.textSecondary, marginTop: spacing.sm }]}>
+                        Imposters don't see who else is imposter, so the round stays chaotic and fun. After a troll round, "Play Again" resets back to your chosen imposter count for the next round.
+                      </Text>
+                    </>
+                  )}
+                  {infoModal === 'hint' && (
+                    <>
+                      <View style={[styles.modalSection, { backgroundColor: colors.accentLight + '30', borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: spacing.sm, marginBottom: spacing.sm }]}>
+                        <Text style={[styles.modalDescription, { color: colors.text, fontWeight: '600', marginBottom: spacing.xs }]}>
+                          What it does:
+                        </Text>
+                        <Text style={[styles.modalDescription, { color: colors.text }]}>
+                          When enabled, the imposter sees a short clue about the word on their card (for example a translation or category hint), so they can bluff a bit more easily.
+                        </Text>
+                      </View>
+                      <Text style={[styles.modalDescription, { color: colors.textSecondary, marginTop: spacing.sm }]}>
+                        The hint is vague on purpose — it helps the imposter stay in the game without giving away the secret word.
+                      </Text>
                     </>
                   )}
                   {infoModal === 'word' && (
@@ -2232,8 +2404,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
     gap: spacing.sm,
+  },
+  backToMenuBtn: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  backToMenuBtnText: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  allCategoriesHint: {
+    ...typography.caption,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: spacing.lg,
+    fontStyle: 'italic',
   },
   categoriesList: {
     flex: 1,

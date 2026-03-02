@@ -107,7 +107,7 @@ export default function QuizAnswersReviewScreen() {
                       </Text>
                       {isImposter && (
                         <View style={[styles.badge, { backgroundColor: colors.imposter }]}>
-                          <Text style={[styles.badgeText, { color: colors.text }]}>
+                          <Text style={[styles.badgeText, { color: colors.text }]} numberOfLines={1} allowFontScaling={false}>
                             IMPOSTER
                           </Text>
                         </View>

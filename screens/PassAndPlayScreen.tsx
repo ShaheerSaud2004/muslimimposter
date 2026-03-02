@@ -31,7 +31,7 @@ import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
-import { getCategoryName } from '../utils/game';
+import { getCategoryName, getImposterHint } from '../utils/game';
 import { getResponsiveFontSize, getMinCardTextSize } from '../utils/responsive';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories } from '../utils/storage';
@@ -327,10 +327,10 @@ export default function PassAndPlayScreen() {
           <Text style={[styles.wordPrefix, { color: colors.textSecondary, fontSize: cardFontSizes.wordPrefix }]}>
             {isQuizMode ? 'The answer is...' : 'The word is...'}
           </Text>
-          <Text style={[styles.roleLabel, { color: colors.imposter, fontSize: cardFontSizes.roleLabel }]}>
+          <Text style={[styles.roleLabel, { color: colors.imposter, fontSize: cardFontSizes.roleLabel }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>
             IMPOSTER
           </Text>
-          {otherImposters.length > 0 && (
+          {otherImposters.length > 0 && !settings.trollRoundActive && (
             <Text
               style={[styles.instructionText, { color: colors.imposter, marginTop: 8, fontWeight: '600', fontSize: cardFontSizes.instruction }]}
             >
@@ -351,6 +351,15 @@ export default function PassAndPlayScreen() {
               You do not know the answer to the question
             </Text>
           )}
+          {settings.showHintToImposter && !settings.specialModes.blindImposter && (() => {
+            const hint = getImposterHint(settings.secretWord, settings.secretCategory);
+            return (
+              <View style={[styles.imposterHintContainer, { backgroundColor: colors.accentLight + '40', borderColor: colors.accent }]}>
+                <Text style={[styles.imposterHintLabel, { color: colors.accent }]}>Hint</Text>
+                <Text style={[styles.imposterHintText, { color: colors.text }]}>{hint}</Text>
+              </View>
+            );
+          })()}
         </>
       );
     }
@@ -373,7 +382,7 @@ export default function PassAndPlayScreen() {
               Category: {categoryName}
             </Text>
           )}
-          <Text style={[styles.roleLabel, { color: colors.doubleAgent, fontSize: cardFontSizes.roleLabel }]}>
+          <Text style={[styles.roleLabel, { color: colors.doubleAgent, fontSize: cardFontSizes.roleLabel }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>
             DOUBLE AGENT
           </Text>
           <Text style={[styles.wordPrefix, { color: colors.textSecondary, fontSize: cardFontSizes.wordPrefix }]}>
@@ -1045,6 +1054,29 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: spacing.lg,
     fontWeight: '500',
+  },
+  imposterHintContainer: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    width: '100%',
+    alignItems: 'center',
+  },
+  imposterHintLabel: {
+    ...typography.caption,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  imposterHintText: {
+    ...typography.body,
+    fontSize: 15,
+    textAlign: 'center',
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
   hideContainer: {
     alignItems: 'center',

@@ -9,6 +9,31 @@ export const generatePlayerNames = (count: number): string[] => {
   return names;
 };
 
+/** Troll mode: ~10% chance per round. When it triggers, imposters are randomly 2..numPlayers (more than one, or everyone). Imposters don't see who else is imposter. */
+const TROLL_ROUND_CHANCE = 0.1;
+
+export const shouldUseTrollRound = (trollMode: boolean): boolean => {
+  return trollMode && Math.random() < TROLL_ROUND_CHANCE;
+};
+
+export const getTrollRoundParams = (
+  numPlayers: number,
+  trollMode: boolean
+): { numImposters: number; hasDoubleAgent: boolean; trollRoundActive: boolean } => {
+  if (!shouldUseTrollRound(trollMode) || numPlayers < 2) {
+    return { numImposters: 0, hasDoubleAgent: true, trollRoundActive: false };
+  }
+  // Random 2..numPlayers imposters: might be more than one, or everyone. It just happens.
+  const minImposters = Math.min(2, numPlayers);
+  const maxImposters = numPlayers;
+  const numImposters = minImposters + Math.floor(Math.random() * (maxImposters - minImposters + 1));
+  return {
+    numImposters,
+    hasDoubleAgent: false,
+    trollRoundActive: true,
+  };
+};
+
 /** Voting/discussion time in seconds: dynamic by player count (base + per player), clamped 60–300 */
 export const getVotingTimeSeconds = (numPlayers: number): number => {
   const total = VOTING_TIMER.BASE_SECONDS + VOTING_TIMER.PER_PLAYER_SECONDS * numPlayers;
@@ -164,14 +189,51 @@ export const getCategoryName = (categoryId: string, categories: Category[]): str
 };
 
 export const generateHint = (word: string): string => {
-  // Simple hint generation - can be enhanced
   const hints: Record<string, string> = {
     'Masjid': 'A place of worship',
     'Prophet': 'A messenger of Allah',
     'Quran': 'The holy book',
   };
-  
   return hints[word] || `Starts with "${word[0].toUpperCase()}"`;
+};
+
+/** Vague hints for imposter – never as easy as the full translation */
+const IMPOSTER_HINT_BY_CATEGORY: Record<string, string> = {
+  prophets: 'A Prophet',
+  seerah: 'From the life of the Prophet ﷺ',
+  ramadan: 'Related to Ramadan',
+  worship: 'Related to prayer or worship',
+  'halal-foods': 'A food or drink',
+  'masjid-life': 'Something in a masjid',
+  'basic-terms': 'An Islamic term',
+  angels: 'An angel',
+  'quran-stories': 'From the Quran',
+  'quran-concepts': 'An Islamic concept',
+  'quran-surahs': 'A Quran chapter',
+  companions: 'A companion or figure',
+  'wives-of-prophet': 'From the Prophet\'s household',
+  'women-in-islam': 'A female figure in Islam',
+  'islamic-history': 'A moment in Islamic history',
+  'islamic-months': 'An Islamic month',
+  'islamic-scholars': 'A scholar or imam',
+  'islamic-architecture': 'A building or structure',
+  'islamic-countries': 'A country or region',
+  'islamic-clothing': 'A garment or item',
+  'places-islam': 'A place or location',
+  'sunnah-foods': 'A food from the Sunnah',
+  marriage: 'Related to marriage',
+  'hajj-umrah': 'Related to Hajj or Umrah',
+  adab: 'A greeting or phrase',
+  msa: 'An Arabic phrase',
+  'animals-quran': 'An animal from the Quran',
+  'creation-nature': 'From creation or nature',
+  'halal-haram': 'A ruling or concept',
+};
+
+export const getImposterHint = (word: string, categoryId: string): string => {
+  const categoryHint = IMPOSTER_HINT_BY_CATEGORY[categoryId];
+  if (categoryHint) return categoryHint;
+  return `Starts with "${word.trim()[0]?.toUpperCase() ?? '?'}"`;
 };
 
 // Select a random quiz question for quiz mode

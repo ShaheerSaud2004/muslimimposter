@@ -132,7 +132,7 @@ export default function QuizAnswerScreen() {
             ]}>
               {/* Player Name */}
               <View style={styles.playerSection}>
-                <Text style={[styles.playerLabel, { color: colors.textSecondary }]}>
+                <Text style={[styles.playerLabel, { color: colors.textSecondary }]} numberOfLines={1} allowFontScaling={false}>
                   {isImposter ? 'IMPOSTER' : 'Player'}
                 </Text>
                 <Text style={[styles.playerName, { color: isImposter ? colors.imposter : colors.accent }]}>

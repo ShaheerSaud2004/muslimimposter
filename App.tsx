@@ -25,6 +25,7 @@ import CreateCategoryScreen from './screens/CreateCategoryScreen';
 import CreatePlaylistScreen from './screens/CreatePlaylistScreen';
 import GameConfirmationScreen from './screens/GameConfirmationScreen';
 import StatisticsScreen from './screens/StatisticsScreen';
+import DebugScreen from './screens/DebugScreen';
 import DebugRevealPreviewScreen from './screens/DebugRevealPreviewScreen';
 import DebugAchievementPopupScreen from './screens/DebugAchievementPopupScreen';
 import { Alert, showAlert } from './components/Alert';
@@ -47,6 +48,7 @@ export type RootStackParamList = {
   CreateCategory: undefined;
   CreatePlaylist: { initialCategoryIds?: string[] };
   Statistics: undefined;
+  Debug: undefined;
   DebugRevealPreview: undefined;
   DebugAchievementPopup: undefined;
 };
@@ -254,6 +256,7 @@ function AppContent() {
           <Stack.Screen name="CreateCategory" component={CreateCategoryScreen} />
           <Stack.Screen name="CreatePlaylist" component={CreatePlaylistScreen} />
           <Stack.Screen name="Statistics" component={StatisticsScreen} />
+          <Stack.Screen name="Debug" component={DebugScreen} />
           <Stack.Screen name="DebugRevealPreview" component={DebugRevealPreviewScreen} />
           <Stack.Screen name="DebugAchievementPopup" component={DebugAchievementPopupScreen} />
         </Stack.Navigator>

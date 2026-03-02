@@ -97,7 +97,7 @@ export default function GameConfirmationScreen() {
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                   Imposters
                 </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
+                <Text style={[styles.infoValue, { color: colors.text }]} numberOfLines={1} allowFontScaling={false}>
                   {numImposters} {numImposters === 1 ? 'imposter' : 'imposters'}
                 </Text>
               </View>
@@ -156,7 +156,7 @@ export default function GameConfirmationScreen() {
                     <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                       Special Mode
                     </Text>
-                    <Text style={[styles.infoValue, { color: colors.doubleAgent }]}>
+                    <Text style={[styles.infoValue, { color: colors.doubleAgent }]} numberOfLines={1} allowFontScaling={false}>
                       Double Agent Active
                     </Text>
                     <Text style={[styles.infoDescription, { color: colors.textSecondary }]}>
@@ -180,7 +180,7 @@ export default function GameConfirmationScreen() {
                     <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                       Special Mode
                     </Text>
-                    <Text style={[styles.infoValue, { color: colors.text }]}>
+                    <Text style={[styles.infoValue, { color: colors.text }]} numberOfLines={1} allowFontScaling={false}>
                       Blind Imposter Active
                     </Text>
                     <Text style={[styles.infoDescription, { color: colors.textSecondary }]}>

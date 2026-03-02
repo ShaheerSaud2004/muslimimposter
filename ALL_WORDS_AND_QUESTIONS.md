@@ -56,18 +56,27 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Suhoor
 - Taraweeh
 - Fasting
-- Quran
-- Charity
-- Prayer
-- Dates
-- Water
-- Laylatul Qadr
-- Eid
-- Ramadan
-- Dhikr
-- Dua
-- Zakat
-- Sadaqah
+- I\
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
 
 ### Worship & Prayer (`worship`)
 
@@ -92,43 +101,43 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 
 ### Halal Foods (`halal-foods`)
 
-- Dates
-- Olives
-- Honey
 - Lamb
 - Chicken
-- Fish
 - Rice
-- Bread
 - Yogurt
-- Milk
 - Fruits
 - Vegetables
 - Nuts
 - Water
 - Tea
 - Coffee
+- Shrimp
+- Pita
+- Cheese
+- Oats
+- Butter
+- Lentils
 
 ### Masjid Life (`masjid-life`)
 
-- Mosque
-- Prayer Hall
-- Qibla
-- Prayer Rug
-- Quran Stand
-- Imam
-- Jummah
-- Khutbah
-- Wudu
-- Classes
 - Masjid
+- Prayer Hall
+- Minbar
+- Mihrab
+- Minaret
+- Dome
+- Quran Stand
+- Ablution area
+- Shoe rack
+- Classes
+- Congregation
 
 ### Basic Islamic Terms (`basic-terms`)
 
 - Allah
 - Deen
 - Iman
-- Haram
+- Taqwa
 - Sunnah
 - Hadith
 - Quran
@@ -137,7 +146,7 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Prophet
 - Mosque
 - Prayer
-- Fasting
+- Ibadah
 - Charity
 - Hajj
 - Umrah
@@ -191,10 +200,10 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Dhul Qidah
 - Eid al-Fitr
 - Eid al-Adha
-- Laylatul Qadr
+- Yawm Arafah
 - Mawlid
 - Ashura
-- Hajj
+- Isra and Mi\
 
 ### Quran Concepts (`quran-concepts`)
 
@@ -219,21 +228,11 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Wali
 - Walima
 - Henna
-- Dua
+- Barakah
 - Consummation
 - Talaq/Divorce
 - Love Bank
 - Jeeting
-
-### Charity & Zakat (`charity-zakat`)
-
-- Zakat
-- Sadaqah
-- Charity
-- Orphans
-- Donation
-- Community
-- Education
 
 ### Hajj & Umrah (`hajj-umrah`)
 
@@ -280,20 +279,28 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Umar (RA)
 - Uthman (RA)
 - Ali (RA)
-- Khadija (RA)
-- Aisha (RA)
-- Fatima (RA)
 - Bilal (RA)
 - Hamza (RA)
 - Zayd (RA)
-- Umm Aiman (RA)
-- Zainab (RA)
-- Hassan (RA)
-- Hussein (RA)
-- Anas (RA)
-- Abdullah ibn Abbas (RA)
-- Abu Hurairah (RA)
-- Sahabah (RA)
+- Talha (RA)
+- Zubayr (RA)
+- Sa\
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
+- ,
+      
 
 ### Islamic Architecture & Places (`islamic-architecture`)
 
@@ -301,7 +308,6 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Masjid Nabawi
 - Masjid Al-Aqsa
 - Dome of the Rock
-- Al-Azhar
 - Blue Mosque
 - Medina
 - Makkah
@@ -324,13 +330,65 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Saudi Arabia
 - Egypt
 - Pakistan
-- Indonesia
 - Malaysia
 - Turkey
 - Iran
 - UAE
 - Morocco
 - Bangladesh
+
+### Quran Surahs (`quran-surahs`)
+
+- Al-Fatiha
+- Al-Ikhlas
+- Yasin
+- Al-Baqarah
+- Al-Kahf
+- Ar-Rahman
+- Al-Mulk
+- An-Nas
+- Al-Falaq
+- Al-Kawthar
+- Al-Asr
+- Al-Fil
+- Maryam
+- Yusuf
+- Ibrahim
+- An-Noor
+- Al-Hadid
+- Al-Muzzammil
+- Al-Muddaththir
+
+### Stories from the Quran (`quran-stories`)
+
+- People of the Cave
+- Musa and Khidr
+- Queen of Sheba
+- Story of Yusuf
+- Noah and the Ark
+- Ibrahim and the Fire
+- Maryam and Isa
+- Dhul Qarnayn
+- Prophet Saleh and the Camel
+- People of the Elephant
+- Cave of Hira
+- Ashab al-Ukhdud
+- Talut and Jalut
+- The Cow of Bani Israel
+- Manna and Quail
+
+### Sunnah Foods (`sunnah-foods`)
+
+- Dates
+- Honey
+- Olive Oil
+- Black Seed
+- Milk
+- Watermelon
+- Zamzam Water
+- Sharawma
+- Khanfa
+- Pomegranate
 
 ### MSA (`msa`)
 
@@ -349,6 +407,64 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - Alex Library
 - Cursed Library
 - Tawaf at Alex
+
+### Animals in the Quran (`animals-quran`)
+
+- Camel
+- Ant
+- Bee
+- Spider
+- Elephant
+- Hoopoe
+- Whale
+- Cow
+- Donkey
+- Horse
+- Bird
+- Sheep
+- Goat
+- Fish
+- Locust
+- Wolf
+
+### Creation & Nature (`creation-nature`)
+
+- Sky
+- Earth
+- Sun
+- Moon
+- Stars
+- Mountains
+- Sea
+- Rain
+- Tree
+- Garden
+
+### Places in Islam (`places-islam`)
+
+- Mount Hira
+- Cave of Thawr
+- Mina
+- Arafat
+- Muzdalifah
+- Jamarat
+- Zamzam well
+- Safa and Marwah
+- Mount Uhud
+
+### Halal & Haram (basics) (`halal-haram`)
+
+- Halal
+- Haram
+- Pork
+- Alcohol
+- Gambling
+- Backbiting
+- Zabiha
+- Halal meat
+- Theft
+- Riba
+- Good deed
 
 ---
 
@@ -415,9 +531,6 @@ Regenerate this file: `node scripts/generate-words-questions-list.js`
 - **marriage-2** | `marriage` | Dowry given to the bride | **Mahr**
 - **marriage-3** | `marriage` | Wedding feast | **Walima**
 - **marriage-4** | `marriage` | Decorative art applied to hands before wedding | **Henna**
-- **charity-2** | `charity-zakat` | Voluntary charity | **Sadaqah**
-- **charity-3** | `charity-zakat` | Act of giving to others | **Charity**
-- **charity-4** | `charity-zakat` | Children without parents | **Orphans**
 - **hajj-2** | `hajj-umrah` | Sacred water from Makkah | **Zamzam Water**
 - **hajj-3** | `hajj-umrah` | Circumambulation around the Kaaba | **Tawaf**
 - **hajj-4** | `hajj-umrah` | Holy city where the Prophet ﷺ is buried | **Madinah**

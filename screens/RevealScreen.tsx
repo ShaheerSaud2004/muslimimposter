@@ -37,7 +37,7 @@ import { useGame } from '../contexts/GameContext';
 import { PatternBackground } from '../components/PatternBackground';
 import { typography, spacing } from '../theme';
 import * as Haptics from 'expo-haptics';
-import { getCategoryName, createPlayers, selectRandomWord, selectImposterQuizQuestion, selectDifferentCategory, selectSingleRandomCategory, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS } from '../utils/game';
+import { getCategoryName, createPlayers, getTrollRoundParams, selectRandomWord, selectImposterQuizQuestion, selectDifferentCategory, selectSingleRandomCategory, RANDOM_PLAY_EXCLUDED_CATEGORY_IDS } from '../utils/game';
 import { defaultCategories } from '../data/categories';
 import { getCustomCategories, getUsedWords, addUsedWord, clearUsedWords, getSessionUsedQuestionIds, addSessionUsedQuestionId, clearSessionUsedQuestionIds, getSessionUsedWords, addSessionUsedWord, clearSessionUsedWords, saveGameResult, GameResult } from '../utils/storage';
 import { GameSettings } from '../types';
@@ -340,10 +340,14 @@ export default function RevealScreen() {
       const randomStartIndex = Math.floor(Math.random() * settings.numPlayers);
       const newStartingPlayerId = `player-${randomStartIndex}`;
       const previousImposterIds = players.filter(p => p.role === 'imposter').map(p => p.id);
+      const baseNumImposters = settings.userChosenNumImposters ?? settings.numImposters;
+      const trollParams = getTrollRoundParams(settings.numPlayers, settings.specialModes.trollMode ?? false);
+      const effectiveNumImposters = trollParams.trollRoundActive ? trollParams.numImposters : baseNumImposters;
+      const effectiveDoubleAgent = trollParams.trollRoundActive ? trollParams.hasDoubleAgent : settings.specialModes.doubleAgent;
       const newPlayers = createPlayers(
         settings.numPlayers,
-        settings.numImposters,
-        settings.specialModes.doubleAgent,
+        effectiveNumImposters,
+        effectiveDoubleAgent,
         newStartingPlayerId,
         playerNamesOrdered,
         previousImposterIds
@@ -351,12 +355,15 @@ export default function RevealScreen() {
 
       const newSettings: GameSettings = {
         ...settings,
+        numImposters: effectiveNumImposters,
+        userChosenNumImposters: settings.userChosenNumImposters ?? settings.numImposters,
         startingPlayerId: newStartingPlayerId,
         secretWord: newSecretWord,
         secretCategory: newSecretCategoryId,
         quizQuestion: newQuizQuestion,
         imposterQuizQuestion: newImposterQuizQuestion,
         playerNames: playerNamesOrdered,
+        trollRoundActive: trollParams.trollRoundActive,
       };
 
       // Navigate with next round in params so Reveal screen doesn't re-render with new data; PassAndPlay applies it after slide
@@ -439,10 +446,14 @@ export default function RevealScreen() {
       const randomStartIndex = Math.floor(Math.random() * settings.numPlayers);
       const newStartingPlayerId = `player-${randomStartIndex}`;
       const previousImposterIds = players.filter(p => p.role === 'imposter').map(p => p.id);
+      const baseNumImposters = settings.userChosenNumImposters ?? settings.numImposters;
+      const trollParams = getTrollRoundParams(settings.numPlayers, settings.specialModes.trollMode ?? false);
+      const effectiveNumImposters = trollParams.trollRoundActive ? trollParams.numImposters : baseNumImposters;
+      const effectiveDoubleAgent = trollParams.trollRoundActive ? trollParams.hasDoubleAgent : settings.specialModes.doubleAgent;
       const newPlayers = createPlayers(
         settings.numPlayers,
-        settings.numImposters,
-        settings.specialModes.doubleAgent,
+        effectiveNumImposters,
+        effectiveDoubleAgent,
         newStartingPlayerId,
         playerNamesOrdered,
         previousImposterIds
@@ -450,12 +461,15 @@ export default function RevealScreen() {
 
       const newSettings: GameSettings = {
         ...settings,
+        numImposters: effectiveNumImposters,
+        userChosenNumImposters: settings.userChosenNumImposters ?? settings.numImposters,
         startingPlayerId: newStartingPlayerId,
         secretWord: newSecretWord,
         secretCategory: newSecretCategoryId,
         quizQuestion: newQuizQuestion,
         imposterQuizQuestion: newImposterQuizQuestion,
         playerNames: playerNamesOrdered,
+        trollRoundActive: trollParams.trollRoundActive,
       };
 
       // Navigate with next round in params so Reveal screen doesn't re-render with new data; PassAndPlay applies it after slide
@@ -610,6 +624,11 @@ export default function RevealScreen() {
                   <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                     The secret is revealed
                   </Text>
+                  {settings?.trollRoundActive && (
+                    <View style={[styles.trollBadge, { backgroundColor: colors.imposter + '25', borderColor: colors.imposter }]}>
+                      <Text style={[styles.trollBadgeText, { color: colors.imposter }]}>Troll round! 😈</Text>
+                    </View>
+                  )}
                 </View>
                 <View style={styles.headerShareIcon} pointerEvents="box-none">
                   <Pressable
@@ -702,7 +721,7 @@ export default function RevealScreen() {
                     </View>
                   </Animated.View>
                   <View style={styles.infoContent}>
-                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]} numberOfLines={1} allowFontScaling={false}>
                       Imposter{imposters.length > 1 ? 's' : ''}
                     </Text>
                     <TypewriterText
@@ -711,6 +730,11 @@ export default function RevealScreen() {
                       speed={30}
                       delay={1000}
                     />
+                    {settings?.trollRoundActive && (
+                      <Text style={[styles.trollExplanation, { color: colors.textSecondary }]}>
+                        Troll mode: sometimes the game picks more imposters—or everyone. It just happens. Imposters didn't know who else was imposter.
+                      </Text>
+                    )}
                   </View>
                 </View>
               </Animated.View>
@@ -727,7 +751,7 @@ export default function RevealScreen() {
                         </View>
                       </Animated.View>
                       <View style={styles.infoContent}>
-                        <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+                        <Text style={[styles.infoLabel, { color: colors.textSecondary }]} numberOfLines={1} allowFontScaling={false}>
                           Double Agent{doubleAgents.length > 1 ? 's' : ''}
                         </Text>
                         <TypewriterText
@@ -952,6 +976,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
   },
+  trollBadge: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignSelf: 'center',
+  },
+  trollBadgeText: {
+    ...typography.caption,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   resultsCard: {
     marginBottom: spacing.xl,
   },
@@ -996,6 +1033,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 36,
     textAlign: 'center',
+    width: '100%',
+  },
+  trollExplanation: {
+    ...typography.caption,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
     width: '100%',
   },
   infoDescriptionBlock: {
