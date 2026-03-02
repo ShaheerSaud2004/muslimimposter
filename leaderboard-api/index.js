@@ -9,9 +9,13 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// DigitalOcean Managed DB uses SSL; accept cert without verification.
+// Remove sslmode from URL so pg uses our ssl config (URL can force verify-full).
+const dbUrl = process.env.DATABASE_URL || '';
+const connectionString = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$|&$/g, '') || dbUrl;
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: dbUrl ? { rejectUnauthorized: false } : false,
 });
 
 app.use(express.json());
